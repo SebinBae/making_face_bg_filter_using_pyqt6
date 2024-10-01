@@ -2,7 +2,7 @@ import sys
 from functools import partial
 from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtWidgets import QApplication, QPushButton, QHBoxLayout, QVBoxLayout, QWidget, QMainWindow, QLabel, QMenuBar
-from PyQt6.QtGui import QIcon , QAction
+from PyQt6.QtGui import QIcon, QAction
 
 
 class MainWindow(QMainWindow):
@@ -97,7 +97,7 @@ class MainWindow(QMainWindow):
         toolbar.setStyleSheet("""
             QToolBar {
                 background-color: rgb(172,172,172); /* 배경색 */
-                border: 1px; /* 경계선 1px */
+                border: 1px solid black; /* 경계선 1px */
             }
             QToolButton {
                 background-color: transparent; /* 툴바 버튼 배경을 투명하게 */

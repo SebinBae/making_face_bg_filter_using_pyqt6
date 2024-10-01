@@ -2,7 +2,7 @@ import sys
 from functools import partial
 from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtWidgets import QApplication, QPushButton, QHBoxLayout, QVBoxLayout, QWidget, QMainWindow, QLabel, QMenuBar
-from PyQt6.QtGui import QIcon , QAction
+from PyQt6.QtGui import QIcon, QAction
 
 
 class MainWindow(QMainWindow):
@@ -60,7 +60,7 @@ class MainWindow(QMainWindow):
                     background-color: rgb(255,255,255);
                     border-radius: 53px; /* 테두리 곡률 53px */
                     color: black; /* 버튼 글자 색은 검정색 */
-                    border: 2px solid rgb(0, 0, 0); /* 2px 두께의 테두리 검정색 테두리 */
+                    border: 1px solid rgb(0, 0, 0); /* 2px 두께의 테두리 검정색 테두리 */
 
                 }
                 QPushButton:hover {
@@ -99,7 +99,7 @@ class MainWindow(QMainWindow):
         toolbar.setStyleSheet("""
             QToolBar {
                 background-color: rgb(255, 255, 255); /* 배경색 */
-                border: 1px; /* 경계선 1px */
+                border: 1px solid black; /* 경계선 1px */ 
             }
             QToolButton {
                 background-color: transparent; /* 툴바 버튼 배경을 투명하게 */
@@ -140,10 +140,11 @@ class MainWindow(QMainWindow):
             QMenuBar {
                 background-color: rgba(255, 255, 255); /* 메뉴바 배경색 */
                 color: black; /* 메뉴 텍스트 색 */
+                /*border : 1px solid black; */
             }
             QMenuBar::item {
                 background-color: transparent; /* 메뉴 항목의 배경을 투명하게 */
-                padding: 5px; /* 여백 추가 */
+                 padding: 5px; /* 여백 추가 */ 
                 color: black; /* 메뉴 항목 텍스트 색상 설정 */
             }
             QMenuBar::item:selected {

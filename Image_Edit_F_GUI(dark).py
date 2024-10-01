@@ -2,7 +2,7 @@ import sys
 from functools import partial
 from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtWidgets import QApplication, QPushButton, QHBoxLayout, QVBoxLayout, QWidget, QMainWindow, QLabel, QMenuBar
-from PyQt6.QtGui import QIcon , QAction
+from PyQt6.QtGui import QIcon, QAction
 
 
 class MainWindow(QMainWindow):
@@ -97,7 +97,7 @@ class MainWindow(QMainWindow):
         toolbar.setStyleSheet("""
             QToolBar {
                 background-color: rgb(78, 78, 78); /* 배경색 */
-                border: none; /* 경계선 제거 */
+                border: 1px solid black; /* 경계선 1px 직사각형 경계 */
             }
             QToolButton {
                 background-color: transparent; /* 툴바 버튼 배경을 투명하게 */
@@ -118,7 +118,7 @@ class MainWindow(QMainWindow):
             "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Video off.png",
             "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Save.png",
             "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Trash 3.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Settings.png"
+            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Settingss.png"
         ]
 
         # 툴바에 아이콘 추가
@@ -137,7 +137,7 @@ class MainWindow(QMainWindow):
         menu_bar.setStyleSheet("""
             QMenuBar {
                 background-color: rgb(78, 78, 78); /* 메뉴바 배경색 */
-                color: white; /* 메뉴 텍스트 색 */
+                color: white; /* 햣메뉴 텍스트 색 */
             }
             QMenuBar::item {
                 background-color: transparent; /* 메뉴 항목의 배경을 투명하게 */
