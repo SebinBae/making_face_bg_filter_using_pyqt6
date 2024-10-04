@@ -1,8 +1,11 @@
 import sys
 from functools import partial
 from PyQt6.QtCore import QSize, Qt
-from PyQt6.QtWidgets import QApplication, QPushButton, QHBoxLayout, QVBoxLayout, QWidget, QMainWindow, QLabel, QMenuBar
+from PyQt6.QtWidgets import QApplication, QPushButton, QHBoxLayout, QVBoxLayout, QWidget, QMainWindow, QLabel, QDialog, \
+    QMessageBox
 from PyQt6.QtGui import QIcon, QAction
+from CameraSelectionDialog import CameraSelectionDialog
+
 
 
 class MainWindow(QMainWindow):
@@ -11,7 +14,7 @@ class MainWindow(QMainWindow):
 
         # 창 타이틀과 크기 설정
         self.setWindowTitle('RTI EDIT')
-        self.setGeometry(400, 200, 1000, 650)
+        self.setFixedSize(1600,900)
         self.setStyleSheet("background-color:  rgb(255,255,255);")
 
         # --- 툴바 설정 ---
@@ -91,6 +94,8 @@ class MainWindow(QMainWindow):
 
         central_widget.setLayout(main_layout)
 
+        # 카메라 선택 값 저장
+        self.selected_camera = None
     def create_toolbar(self):
         # 툴바 생성
         toolbar = self.addToolBar('Main Toolbar')
@@ -159,9 +164,37 @@ class MainWindow(QMainWindow):
             menu.addAction(QAction(f"{title} option 1", self))
             menu.addAction(QAction(f"{title} Option 2", self))
 
+    def show_warning_dialog(self, message):
+        # QDialog를 사용하여 경고창을 띄움
+        msg_box = QMessageBox()
+        msg_box.setIcon(QMessageBox.Icon.Warning)
+        msg_box.setText(message)
+        msg_box.setWindowTitle("RTI Edit ")
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+        msg_box.exec()
+
+    def select_camera_device(self):
+        # 카메라 선택 대화상자 열기
+        dialog = CameraSelectionDialog()
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            self.selected_camera = dialog.get_selected_camera()
+            print(f"선택된 카메라: {self.selected_camera}")
+        else:
+            print("카메라 선택 취소됨.")
+
     def on_button_click(self, index):
-        button_texts = ["장치 연결", "실시간 영상", "이미지 편집", "설정"]
-        print(f"{button_texts[index]} clicked")
+        if index == 0:
+            self.select_camera_device()
+        elif index == 1:
+            print("실시간 영상 버튼 클릭")
+            if self.selected_camera is None:
+                self.show_warning_dialog("카메라를 찾을 수 없습니다. \n\n카메라가 PC의 USB포트에 연결되었는지 확인해주세요.\n\n카메라가 제대로 실시간 영상 버튼을 통해 카메라를 선택해주세요 ㅎㅎ")
+            else:
+                print(f"선택된 카메라 장치: {self.selected_camera}")
+        elif index == 2:
+            print("이미지 편집 버튼 클릭")
+        elif index == 3:
+            print("설정 버튼 클릭")
 
 
 if __name__ == '__main__':
