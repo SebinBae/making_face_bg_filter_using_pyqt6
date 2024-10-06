@@ -185,7 +185,7 @@ class MainWindow(QMainWindow):
         elif index == 1:
             print("실시간 영상 버튼 클릭")
             if self.selected_camera is None:
-                self.show_warning_dialog("카메라를 찾을 수 없습니다. \n\n카메라가 PC의 USB포트에 연결되었는지 확인해주세요.\n\n카메라가 제대로 실시간 영상 버튼을 통해 카메라를 선택해주세요 ㅎㅎ")
+                self.show_warning_dialog("카메라를 찾을 수 없습니다. \n\n카메라가 PC의 USB포트에 연결되었는지 확인해주세요.\n\n카메라가 제대로 연결 되어있다면 \n실시간 영상 버튼을 통해 카메라를 선택해주세요 ㅎㅎ")
             else:
                 print(f"선택된 카메라 장치: {self.selected_camera}")
         elif index == 2:
