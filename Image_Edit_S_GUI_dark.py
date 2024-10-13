@@ -344,9 +344,14 @@ class MainWindow(QMainWindow):
             else:
                 print("이미지 파일이 아닙니다.")
 
-
-if __name__ == '__main__':
+def run_image_editor_dark():
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
     sys.exit(app.exec())
+
+if __name__ == '__main__':
+    run_image_editor_dark()
+
+
+
