@@ -345,11 +345,14 @@ class MainWindow(QMainWindow):
                 print("이미지 파일이 아닙니다.")
 
 def run_image_editor_dark():
-    app = QApplication(sys.argv)
-    window = MainWindow()
-    window.show()
-    sys.exit(app.exec())
+    try:
+        app = QApplication(sys.argv)
+        window = MainWindow()
+        window.show()
+        sys.exit(app.exec())
 
+    except Exception as e:
+        print(f"오류 발생: {e}")
 if __name__ == '__main__':
     run_image_editor_dark()
 

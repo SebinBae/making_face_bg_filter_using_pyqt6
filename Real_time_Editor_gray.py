@@ -16,7 +16,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('RTI EDIT')
         self.setFixedSize(1600,900)
         #self.setGeometry(400, 200, 1000, 650)
-        self.setStyleSheet("background-color: rgb(24, 24, 24);")
+        self.setStyleSheet("background-color: rgb(255, 255, 255);")
 
         # --- 툴바 설정 ---
         self.create_toolbar()
@@ -25,10 +25,10 @@ class MainWindow(QMainWindow):
         self.create_menu_bar()
 
         icon_paths = [
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_icon/Navigation.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_icon/Monitor.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_icon/Folder plus.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_icon/Settings.png"
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_icon/Navigation.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_icon/Monitor.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_icon/Folder plus.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_icon/Settings.png"
         ]
 
         button_texts = [
@@ -61,9 +61,9 @@ class MainWindow(QMainWindow):
             button.setStyleSheet(
                 """
                 QPushButton {
-                    background-color: rgb(78, 78, 78);
+                    background-color: rgb(172,172,172);
                     border-radius: 53px; /* 테두리 곡률 53px */
-                    color: white; /* 버튼 글자색은 하얀색 */
+                    color: black; /* 버튼 글자색은 하얀색 */
                 }
                 QPushButton:hover {
                     background-color: rgb(139, 139, 139);
@@ -78,7 +78,7 @@ class MainWindow(QMainWindow):
 
             # 텍스트 레이블 생성
             label = QLabel(button_texts[i], self)
-            label.setStyleSheet("color: white; font-size: 18px;")
+            label.setStyleSheet("color: black; font-size: 18px;")
             label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
             # 수직 레이아웃에 버튼과 텍스트 추가
@@ -95,6 +95,7 @@ class MainWindow(QMainWindow):
 
         # 카메라 선택 값 저장
         self.selected_camera = None
+
     def create_toolbar(self):
         # 툴바 생성
         toolbar = self.addToolBar('Main Toolbar')
@@ -102,8 +103,8 @@ class MainWindow(QMainWindow):
         # 툴바 스타일 적용
         toolbar.setStyleSheet("""
             QToolBar {
-                background-color: rgb(78, 78, 78); /* 배경색 */
-                border: 1px solid black; /* 경계선 1px 직사각형 경계 */
+                background-color: rgb(172,172,172); /* 배경색 */
+                border: 1px solid black; /* 경계선 1px */
             }
             QToolButton {
                 background-color: transparent; /* 툴바 버튼 배경을 투명하게 */
@@ -116,22 +117,22 @@ class MainWindow(QMainWindow):
 
         # 아이콘 경로 리스트
         toolbar_icon_paths = [
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Arrow left-circle.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Arrow right-circle.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Zoom in.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Zoom out.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Video.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Video off.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Save.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Trash 3.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Settingss.png"
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Arrow left-circle.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Arrow right-circle.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Zoom in.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Zoom out.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Video.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Video off.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Save.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Trash 2.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Settings.png"
         ]
 
         # 툴바에 아이콘 추가
         for i in range(len(toolbar_icon_paths)):
             icon = QIcon(toolbar_icon_paths[i])
-            action = QAction(icon, f"Action {i+1}", self)
-            action.setToolTip(f"Action {i+1} tooltip")
+            action = QAction(icon, f"Action {i + 1}", self)
+            action.setToolTip(f"Action {i + 1} tooltip")
             toolbar.addAction(action)
 
         toolbar.setIconSize(QSize(32, 32))  # 아이콘 크기 설정
@@ -142,16 +143,16 @@ class MainWindow(QMainWindow):
         menu_bar = self.menuBar()
         menu_bar.setStyleSheet("""
             QMenuBar {
-                background-color: rgb(78, 78, 78); /* 메뉴바 배경색 */
-                color: white; /* 햣메뉴 텍스트 색 */
+                background-color: rgb(172,172,172); /* 메뉴바 배경색 */
+                color: black; /* 메뉴 텍스트 색 */
             }
             QMenuBar::item {
                 background-color: transparent; /* 메뉴 항목의 배경을 투명하게 */
                 padding: 5px; /* 여백 추가 */
-                color: white; /* 메뉴 항목 텍스트 색상 설정 */
+                color: black; /* 메뉴 항목 텍스트 색상 설정 */
             }
             QMenuBar::item:selected {
-                background-color: rgb(139, 139, 139); /* 선택된 메뉴 항목의 배경색 */
+                background-color: rgb(132, 132, 132); /* 선택된 메뉴 항목의 배경색 */
             }
         """)
 
@@ -170,7 +171,6 @@ class MainWindow(QMainWindow):
         msg_box.setWindowTitle("RTI Edit ")
         msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
         msg_box.exec()
-
     def select_camera_device(self):
         # 카메라 선택 대화상자 열기
         dialog = CameraSelectionDialog()
@@ -239,7 +239,7 @@ class Image_Edit_dark_window(QMainWindow):
         # 창 타이틀과 크기 설정
         self.setWindowTitle('RTI EDIT')
         self.setFixedSize(1600, 900)
-        self.setStyleSheet("background-color: rgb(24, 24, 24);")
+        self.setStyleSheet("background-color: rgb(255,255,255);")
 
         # --- 툴바 설정 ---
         self.create_toolbar()
@@ -255,24 +255,24 @@ class Image_Edit_dark_window(QMainWindow):
 
         # 툴바 하단 아이콘 경로 18개
         editer_tool_paths = [
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Rotate ccw.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Rotate cw.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Scissors.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Minimize 2.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Pause.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Move.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Check square.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Cloud snow.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Box.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Zoom in.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Type.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Zoom out.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Smile.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Pen tool.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Corner up-right.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Corner up-left.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Corner down-right.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Corner down-left.png"
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Rotate ccw.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Rotate cw.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Scissors.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Minimize 2.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Pause.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Move.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Check square.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Cloud snow.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Box.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Zoom in.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Type.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Zoom out.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Smile.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Pen tool.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Corner up-right.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Corner up-left.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Corner down-right.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Corner down-left.png"
         ]
 
         # 버튼을 좌표로 배치
@@ -282,14 +282,14 @@ class Image_Edit_dark_window(QMainWindow):
             button.setIconSize(QSize(32, 32))  # 아이콘 크기
             button.setFixedSize(60, 60)  # 버튼 크기 고정
             button.setStyleSheet("""
-                            QPushButton {
-                                background-color: rgb(78, 78, 78);
-                                border: 1px solid black;
-                            }
-                             QPushButton:hover {
-                                background-color: rgb(139, 139, 139);
-                    }
-                        """)
+                       QPushButton {
+                            background-color: rgb(172,172,172);
+                            border: 1px solid black;
+                        }
+                        QPushButton:hover {
+                            background-color: rgb(139, 139, 139);
+                        }
+                    """)
             # 버튼의 좌표 설정 (x, y 좌표로 배치)
             x = (i % 2) * 60  # 2열로 나누어 배치(버튼의 크기가 60임으로 수정)
             y = 65 + (i // 2) * 60  # 각 행의 높이 계산(툴바 최하단 위치가 65px임 + 버튼의 크기가 60임)
@@ -313,7 +313,7 @@ class Image_Edit_dark_window(QMainWindow):
         # 이미지 로드하는 버튼 코드
         self.load_button = QPushButton(self)
         self.load_button.setFixedSize(300, 300)  # 버튼 크기
-        self.load_button.setIcon(QIcon("C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Plus square.png"))  # 아이콘 설정
+        self.load_button.setIcon(QIcon("C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Plus square.png"))  # 아이콘 설정
         self.load_button.setIconSize(QSize(300, 300))  # 아이콘 크기 조정
         self.load_button.setStyleSheet("""
                        QPushButton {
@@ -334,17 +334,17 @@ class Image_Edit_dark_window(QMainWindow):
         self.replace_button = QPushButton(self)
         self.replace_button.setFixedSize(60, 60)  # 버튼 크기
         self.replace_button.setIcon(
-            QIcon("C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Refresh cw.png"))  # 아이콘 설정 (이미지 교체 버튼 아이콘)
+            QIcon("C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Refresh cw.png"))  # 아이콘 설정 (이미지 교체 버튼 아이콘)
         self.replace_button.setIconSize(QSize(32, 32))  # 아이콘 크기 조정
         self.replace_button.setStyleSheet("""
-                       QPushButton {
-                           background-color: rgb(78, 78, 78);
-                           border: 1px solid black;
-                       }
-                       QPushButton:hover {
-                           background-color: rgb(139, 139, 139);
-                       }
-                   """)
+                   QPushButton {
+                       background-color: rgb(172,172,172);
+                            border: 1px solid black;
+                   }
+                   QPushButton:hover {
+                      background-color: rgb(139, 139, 139);
+                   }
+               """)
         self.replace_button.move(0, 605)  # 원하는 위치에 버튼 배치
         self.replace_button.clicked.connect(self.open_image_file)  # 클릭 시 이미지 교체
 
@@ -362,42 +362,42 @@ class Image_Edit_dark_window(QMainWindow):
         self.tree.setRootIndex(self.model.index(QDir.rootPath()))  # 트리뷰의 루트를 설정
         self.tree.setFixedSize(400, 600)  # 파일 트리뷰 크기 설정
         self.tree.setStyleSheet("""
-                QTreeView {
-                    background-color: rgb(78, 78, 78);  /* 트리뷰 배경색 */
-                    color: white;  /* 텍스트 색 */
-                    border: 1px solid black;  /* 테두리 색상 */
-                }
+            QTreeView {
+                 background-color: rgb(172,172,172);  /* 트리뷰 배경색 */
+                color: black;  /* 텍스트 색 */
+                border: 1px solid black;  /* 테두리 색상 */
+            }
 
-                QHeaderView::section {
-                    background-color: rgb(78, 78, 78);  /* 헤더 배경색 */
-                    color: white;  /* 헤더 텍스트 색상 */
-                    padding: 5px;
-                    border: 1px solid black;  /* 헤더 테두리 */
-                    font-size: 13px;  /* 텍스트 크기 */
-                }   
-                QTreeView::item {
-                    height: 32px;  /* 항목의 높이 */
-                }
+            QHeaderView::section {
+                background-color: rgb(172,172,172); /* 헤더 배경색 */
+                color: black;  /* 헤더 텍스트 색상 */
+                padding: 5px;
+                border: 1px solid black;  /* 헤더 테두리 */
+                font-size: 13px;  /* 텍스트 크기 */
+            }   
+            QTreeView::item {
+                height: 32px;  /* 항목의 높이 */
+            }
 
-                QTreeView::item:selected {
-                    background-color: rgb(139, 139, 139);
-                    color: white;  /* 선택된 항목의 텍스트 색상 */
-                }
+            QTreeView::item:selected {
+                background-color: rgb(139, 139, 139);
+                color: black;  /* 선택된 항목의 텍스트 색상 */
+            }
 
-                QTreeView::item:hover {
-                    background-color: rgb(139, 139, 139); /* 마우스 오버 시 배경색 */
-                    color: white;  /* 마우스 오버 시 텍스트 색상 */
-                }
+            QTreeView::item:hover {
+                background-color: rgb(139, 139, 139); /* 마우스 오버 시 배경색 */
+                color: black;  /* 마우스 오버 시 텍스트 색상 */
+            }
 
-                QTreeView::branch:closed:has-children {
-                    image: url('path_to_collapse_icon.png');  /* 닫힌 폴더 아이콘 */
+            QTreeView::branch:closed:has-children {
+                image: url('path_to_collapse_icon.png');  /* 닫힌 폴더 아이콘 */
 
-                }
+            }
 
-                QTreeView::branch:open:has-children {
-                    image: url('path_to_expand_icon.png');  /* 열린 폴더 아이콘 */
-                }
-            """)
+            QTreeView::branch:open:has-children {
+                image: url('path_to_expand_icon.png');  /* 열린 폴더 아이콘 */
+            }
+        """)
         self.tree.hideColumn(1)
         # self.tree.hideColumn(2)
         self.tree.hideColumn(3)
@@ -414,30 +414,30 @@ class Image_Edit_dark_window(QMainWindow):
 
         # 툴바 스타일 적용
         toolbar.setStyleSheet("""
-                QToolBar {
-                    background-color: rgb(78, 78, 78); /* 배경색 */
-                    border: 1px solid black; /* 경계선 1px 직사각형 경계 */
-                }
-                QToolButton {
-                    background-color: transparent; /* 툴바 버튼 배경을 투명하게 */
-                    border: none; /* 경계선 제거 */
-                }
-                QToolButton:hover {
-                    background-color: rgb(139, 139, 139); /* 호버 시 배경색 변경 */
-                }
-            """)
+           QToolBar {
+                background-color: rgb(172,172,172); /* 배경색 */
+                border: 1px solid black; /* 경계선 1px */
+            }
+            QToolButton {
+                background-color: transparent; /* 툴바 버튼 배경을 투명하게 */
+                border: none; /* 경계선 제거 */
+            }
+            QToolButton:hover {
+                background-color: rgb(139, 139, 139); /* 호버 시 배경색 변경 */
+            }
+        """)
 
         # 아이콘 경로 리스트
         toolbar_icon_paths = [
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Arrow left-circle.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Arrow right-circle.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Zoom in.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Zoom out.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Video.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Video off.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Save.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Trash 3.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Settingss.png"
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Arrow left-circle.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Arrow right-circle.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Zoom in.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Zoom out.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Video.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Video off.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Save.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Trash 2.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Settings.png"
         ]
 
         # 툴바에 아이콘 추가
@@ -454,19 +454,19 @@ class Image_Edit_dark_window(QMainWindow):
         # 메뉴 바 생성
         menu_bar = self.menuBar()
         menu_bar.setStyleSheet("""
-                QMenuBar {
-                    background-color: rgb(78, 78, 78); /* 메뉴바 배경색 */
-                    color: white; /* 햣메뉴 텍스트 색 */
-                }
-                QMenuBar::item {
-                    background-color: transparent; /* 메뉴 항목의 배경을 투명하게 */
-                    padding: 5px; /* 여백 추가 */
-                    color: white; /* 메뉴 항목 텍스트 색상 설정 */
-                }
-                QMenuBar::item:selected {
-                    background-color: rgb(139, 139, 139); /* 선택된 메뉴 항목의 배경색 */
-                }
-            """)
+          QMenuBar {
+                background-color: rgb(172,172,172); /* 메뉴바 배경색 */
+                color: black; /* 메뉴 텍스트 색 */
+            }
+            QMenuBar::item {
+                background-color: transparent; /* 메뉴 항목의 배경을 투명하게 */
+                padding: 5px; /* 여백 추가 */
+                color: black; /* 메뉴 항목 텍스트 색상 설정 */
+            }
+            QMenuBar::item:selected {
+                background-color: rgb(132, 132, 132); /* 선택된 메뉴 항목의 배경색 */
+            }
+        """)
 
         # 각 메뉴 항목 생성
         menu_titles = ["File", "Edit", "View", "Device"]
@@ -584,7 +584,7 @@ class Real_time_Editor(QMainWindow):
         # 창 타이틀과 크기 설정
         self.setWindowTitle('RTI EDIT')
         self.setFixedSize(1600, 900)
-        self.setStyleSheet("background-color: rgb(24, 24, 24);")
+        self.setStyleSheet("background-color: rgb(255,255,255);")
 
         # --- 툴바 설정 ---
         self.create_toolbar()
@@ -600,24 +600,24 @@ class Real_time_Editor(QMainWindow):
 
         # 툴바 하단 아이콘 경로 18개
         editer_tool_paths = [
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Rotate ccw.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Rotate cw.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Scissors.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Minimize 2.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Pause.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Move.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Check square.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Cloud snow.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Box.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Zoom in.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Type.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Zoom out.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Smile.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Pen tool.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Corner up-right.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Corner up-left.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Corner down-right.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Corner down-left.png"
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Rotate ccw.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Rotate cw.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Scissors.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Minimize 2.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Pause.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Move.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Check square.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Cloud snow.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Box.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Zoom in.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Type.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Zoom out.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Smile.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Pen tool.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Corner up-right.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Corner up-left.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Corner down-right.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_left_icon/Corner down-left.png"
         ]
 
         # 버튼을 좌표로 배치
@@ -627,14 +627,14 @@ class Real_time_Editor(QMainWindow):
             button.setIconSize(QSize(32, 32))  # 아이콘 크기
             button.setFixedSize(60, 60)  # 버튼 크기 고정
             button.setStyleSheet("""
-                            QPushButton {
-                                background-color: rgb(78, 78, 78);
-                                border: 1px solid black;
-                            }
-                             QPushButton:hover {
-                                background-color: rgb(139, 139, 139);
-                    }
-                        """)
+                       QPushButton {
+                            background-color: rgb(172,172,172);
+                            border: 1px solid black;
+                        }
+                        QPushButton:hover {
+                            background-color: rgb(139, 139, 139);
+                        }
+                    """)
             # 버튼의 좌표 설정 (x, y 좌표로 배치)
             x = (i % 2) * 60  # 2열로 나누어 배치(버튼의 크기가 60임으로 수정)
             y = 65 + (i // 2) * 60  # 각 행의 높이 계산(툴바 최하단 위치가 65px임 + 버튼의 크기가 60임)
@@ -713,42 +713,42 @@ class Real_time_Editor(QMainWindow):
         self.tree.setRootIndex(self.model.index(QDir.rootPath()))  # 트리뷰의 루트를 설정
         self.tree.setFixedSize(400, 600)  # 파일 트리뷰 크기 설정
         self.tree.setStyleSheet("""
-                QTreeView {
-                    background-color: rgb(78, 78, 78);  /* 트리뷰 배경색 */
-                    color: white;  /* 텍스트 색 */
-                    border: 1px solid black;  /* 테두리 색상 */
-                }
+            QTreeView {
+                 background-color: rgb(172,172,172);  /* 트리뷰 배경색 */
+                color: black;  /* 텍스트 색 */
+                border: 1px solid black;  /* 테두리 색상 */
+            }
 
-                QHeaderView::section {
-                    background-color: rgb(78, 78, 78);  /* 헤더 배경색 */
-                    color: white;  /* 헤더 텍스트 색상 */
-                    padding: 5px;
-                    border: 1px solid black;  /* 헤더 테두리 */
-                    font-size: 13px;  /* 텍스트 크기 */
-                }   
-                QTreeView::item {
-                    height: 32px;  /* 항목의 높이 */
-                }
+            QHeaderView::section {
+                background-color: rgb(172,172,172); /* 헤더 배경색 */
+                color: black;  /* 헤더 텍스트 색상 */
+                padding: 5px;
+                border: 1px solid black;  /* 헤더 테두리 */
+                font-size: 13px;  /* 텍스트 크기 */
+            }   
+            QTreeView::item {
+                height: 32px;  /* 항목의 높이 */
+            }
 
-                QTreeView::item:selected {
-                    background-color: rgb(139, 139, 139);
-                    color: white;  /* 선택된 항목의 텍스트 색상 */
-                }
+            QTreeView::item:selected {
+                background-color: rgb(139, 139, 139);
+                color: black;  /* 선택된 항목의 텍스트 색상 */
+            }
 
-                QTreeView::item:hover {
-                    background-color: rgb(139, 139, 139); /* 마우스 오버 시 배경색 */
-                    color: white;  /* 마우스 오버 시 텍스트 색상 */
-                }
+            QTreeView::item:hover {
+                background-color: rgb(139, 139, 139); /* 마우스 오버 시 배경색 */
+                color: black;  /* 마우스 오버 시 텍스트 색상 */
+            }
 
-                QTreeView::branch:closed:has-children {
-                    image: url('path_to_collapse_icon.png');  /* 닫힌 폴더 아이콘 */
+            QTreeView::branch:closed:has-children {
+                image: url('path_to_collapse_icon.png');  /* 닫힌 폴더 아이콘 */
 
-                }
+            }
 
-                QTreeView::branch:open:has-children {
-                    image: url('path_to_expand_icon.png');  /* 열린 폴더 아이콘 */
-                }
-            """)
+            QTreeView::branch:open:has-children {
+                image: url('path_to_expand_icon.png');  /* 열린 폴더 아이콘 */
+            }
+        """)
         self.tree.hideColumn(1)
         # self.tree.hideColumn(2)
         self.tree.hideColumn(3)
@@ -776,30 +776,30 @@ class Real_time_Editor(QMainWindow):
 
         # 툴바 스타일 적용
         toolbar.setStyleSheet("""
-                QToolBar {
-                    background-color: rgb(78, 78, 78); /* 배경색 */
-                    border: 1px solid black; /* 경계선 1px 직사각형 경계 */
-                }
-                QToolButton {
-                    background-color: transparent; /* 툴바 버튼 배경을 투명하게 */
-                    border: none; /* 경계선 제거 */
-                }
-                QToolButton:hover {
-                    background-color: rgb(139, 139, 139); /* 호버 시 배경색 변경 */
-                }
-            """)
+           QToolBar {
+                background-color: rgb(172,172,172); /* 배경색 */
+                border: 1px solid black; /* 경계선 1px */
+            }
+            QToolButton {
+                background-color: transparent; /* 툴바 버튼 배경을 투명하게 */
+                border: none; /* 경계선 제거 */
+            }
+            QToolButton:hover {
+                background-color: rgb(139, 139, 139); /* 호버 시 배경색 변경 */
+            }
+        """)
 
         # 아이콘 경로 리스트
         toolbar_icon_paths = [
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Arrow left-circle.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Arrow right-circle.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Zoom in.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Zoom out.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Video.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Video off.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Save.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Trash 3.png",
-            "C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Settingss.png"
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Arrow left-circle.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Arrow right-circle.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Zoom in.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Zoom out.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Video.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Video off.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Save.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Trash 2.png",
+            "C:/Users/PC/OneDrive/바탕 화면/gray_theme_toolbar/Settings.png"
         ]
 
         # 툴바에 아이콘 추가
@@ -816,19 +816,19 @@ class Real_time_Editor(QMainWindow):
         # 메뉴 바 생성
         menu_bar = self.menuBar()
         menu_bar.setStyleSheet("""
-                QMenuBar {
-                    background-color: rgb(78, 78, 78); /* 메뉴바 배경색 */
-                    color: white; /* 햣메뉴 텍스트 색 */
-                }
-                QMenuBar::item {
-                    background-color: transparent; /* 메뉴 항목의 배경을 투명하게 */
-                    padding: 5px; /* 여백 추가 */
-                    color: white; /* 메뉴 항목 텍스트 색상 설정 */
-                }
-                QMenuBar::item:selected {
-                    background-color: rgb(139, 139, 139); /* 선택된 메뉴 항목의 배경색 */
-                }
-            """)
+          QMenuBar {
+                background-color: rgb(172,172,172); /* 메뉴바 배경색 */
+                color: black; /* 메뉴 텍스트 색 */
+            }
+            QMenuBar::item {
+                background-color: transparent; /* 메뉴 항목의 배경을 투명하게 */
+                padding: 5px; /* 여백 추가 */
+                color: black; /* 메뉴 항목 텍스트 색상 설정 */
+            }
+            QMenuBar::item:selected {
+                background-color: rgb(132, 132, 132); /* 선택된 메뉴 항목의 배경색 */
+            }
+        """)
 
         # 각 메뉴 항목 생성
         menu_titles = ["File", "Edit", "View", "Device"]

@@ -259,7 +259,7 @@ class MainWindow(QMainWindow):
     def on_grid_button_click(self, index):
         print(f"Grid button {index + 1} clicked")
 
-    def load_image(self, image_path):
+    def load_image(self, image_path): # 경로상에 한글있으면 오류있음 -> 영문 경로상에 폴더 생성하고 사용자한테 dialog로 유도해야할듯
         # OpenCV를 사용하여 이미지 로드
         image = cv2.imread(image_path)
         if image is None:
@@ -313,7 +313,7 @@ class MainWindow(QMainWindow):
                 self.load_button.deleteLater()  # 버튼을 삭제합니다.
                 self.load_button_deleted = True  # 삭제되었음을 플래그로 저장
 
-    # 드래그 앤 드롭을 통한 이미지 로드
+    # 드래그 앤 드롭을 통한 이미지 로드 아직 미완성
     def dragEnterEvent(self, event: QDragEnterEvent):
         if event.mimeData().hasUrls():
             event.acceptProposedAction()

@@ -22,6 +22,45 @@ class CameraSelectionDialog(QDialog):
         layout.addWidget(QLabel("사용할 카메라를 선택해주세요 : \n\n다음과 같은 카메라가 검색되었습니다."))
         layout.addWidget(self.combo_box)
 
+        self.combo_box.setStyleSheet("""
+               QComboBox {
+            background-color: #ffffff;
+            border: 1px solid #888888;
+            border-radius: 5px;
+            padding: 5px;
+            font-size: 14px;
+        }
+
+        QComboBox::drop-down {
+            subcontrol-origin: padding;
+            subcontrol-position: top right;
+            width: 25px;
+            border-left: 1px solid #888888;
+            background-color: #eeeeee;
+        }
+
+        QComboBox::down-arrow {
+            image: url(arrow.png);  /* 화살표 이미지를 사용할 경우 경로 지정 */
+            width: 12px;
+            height: 12px;
+        }
+
+        QComboBox::item {
+            background-color: #ffffff;
+            padding: 5px;
+        }
+
+        QComboBox::item:selected {
+            background-color: #d3d3d3;
+            color: #000000;
+        }
+
+        QComboBox QAbstractItemView {
+            background-color: #f0f0f0;
+            border: 1px solid #888888;
+            selection-background-color: #d3d3d3;
+        }
+        """)
         # 확인과 취소 버튼
         button_box = QDialogButtonBox(QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
         button_box.accepted.connect(self.accept)
@@ -31,15 +70,23 @@ class CameraSelectionDialog(QDialog):
         self.setLayout(layout)
 
     def get_camera_names(self):
-        # Windows에서 카메라 이름을 가져옴
+        # Windows WMI를 통해 카메라 이름을 가져옴
         camera_names = []
         wmi = win32com.client.Dispatch("WbemScripting.SWbemLocator")
         service = wmi.ConnectServer(".", "root\\cimv2")
+
+        # PnP 장치에서 "camera" 또는 "webcam"을 포함하고, 가상 카메라가 아닌 장치만 선택
         devices = service.ExecQuery(
-            "Select * from Win32_PnPEntity where Caption like '%camera%' or Caption like '%webcam%'")
+            "Select * from Win32_PnPEntity where (Caption like '%camera%' or Caption like '%webcam%')"
+        )
 
         for device in devices:
-            camera_names.append(device.Caption)
+            # 가상 카메라가 아닌 장치 필터링 (예: "Virtual", "Emulated", "USB Video", "Screen"과 같은 용어를 제외)
+            if 'virtual' not in device.Caption.lower() and \
+                    'emulated' not in device.Caption.lower() and \
+                    'usb video' not in device.Caption.lower() and \
+                    'screen' not in device.Caption.lower():
+                camera_names.append(device.Caption)
 
         return camera_names
 
