@@ -955,7 +955,7 @@ class CameraThread(QThread):
             print("카메라를 열 수 없습니다.")
             return
 
-        # 카메라 프레임 속도(FPS)를 60으로 설정
+        # 카메라 프레임 속도(FPS)를 60으로 설정 했지만 최대 프레임의 경우 30프레임 지원
         self.cap.set(cv2.CAP_PROP_FPS, 30)
 
         print(f"카메라 설정된 FPS: {self.cap.get(cv2.CAP_PROP_FPS)}")  # FPS 확인
