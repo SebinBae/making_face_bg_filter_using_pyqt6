@@ -1,12 +1,14 @@
 import sys
 import os
 from functools import partial
-from PyQt6.QtCore import QSize, Qt, pyqtSignal, QDir, QThread, pyqtSlot
+from PyQt6.QtCore import QSize, Qt, pyqtSignal, QDir, QThread, pyqtSlot, QTimer, QRect
 from PyQt6.QtWidgets import QApplication, QPushButton, QHBoxLayout, QVBoxLayout, QWidget, QMainWindow, QLabel, QDialog, \
-    QMessageBox, QTreeView, QFileDialog
-from PyQt6.QtGui import QIcon, QAction, QDragEnterEvent, QDropEvent, QFileSystemModel, QImage, QPixmap
+    QMessageBox, QTreeView, QFileDialog, QSlider, QRadioButton, QButtonGroup
+from PyQt6.QtGui import QIcon, QAction, QDragEnterEvent, QDropEvent, QFileSystemModel, QImage, QPixmap, QPainter, QPen, \
+    QColor
 from CameraSelectionDialog import CameraSelectionDialog
 import cv2
+import numpy as np
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -235,6 +237,94 @@ class Image_Edit_dark_window(QMainWindow):
         super().__init__()
         print("이미지 편집 창 초기화 중")
 
+        #초기 이미지 offset 설정
+        #self.current_image_offset_x = 120  # 초기 오프셋 값 설정
+        #self.current_image_offset_y = 30
+
+        #라디오 버튼 그룹 생성
+        self.direction_group = QButtonGroup(self)
+
+        # 상하좌우 라디오 버튼 생성 및 배치
+        self.radio_up = QRadioButton("위", self)
+        self.radio_down = QRadioButton("아래", self)
+        self.radio_left = QRadioButton("왼쪽", self)
+        self.radio_right = QRadioButton("오른쪽", self)
+
+        # 각 라디오 버튼의 위치 설정 (.move 사용)
+        self.radio_up.move(120, 180)
+        self.radio_down.move(120, 210)
+        self.radio_left.move(120, 240)
+        self.radio_right.move(120, 270)
+
+        # 각 버튼을 버튼 그룹에 추가 (추가적 코드로 버튼 위치와 스타일 설정)
+        self.direction_group.addButton(self.radio_up)
+        self.direction_group.addButton(self.radio_down)
+        self.direction_group.addButton(self.radio_left)
+        self.direction_group.addButton(self.radio_right)
+
+        # 라디오 버튼 스타일시트 설정 (하얀색)
+        radio_button_style = """
+               QRadioButton {
+                   color: white;
+                   font-size: 16px;
+               }
+               QRadioButton::indicator {
+                   width: 15px;
+                   height: 15px;
+               }
+                QRadioButton::indicator:hover {
+                    border: 1px rgb(139, 139, 139);
+                }
+               """
+
+        self.radio_up.setStyleSheet(radio_button_style)
+        self.radio_down.setStyleSheet(radio_button_style)
+        self.radio_left.setStyleSheet(radio_button_style)
+        self.radio_right.setStyleSheet(radio_button_style)
+
+
+        # 처음에는 라디오 버튼 숨기기
+        self.radio_up.hide()
+        self.radio_down.hide()
+        self.radio_left.hide()
+        self.radio_right.hide()
+
+        # 타이머 설정 (3초 후에 라디오 버튼을 숨기기 위한 타이머)
+        self.radio_hide_timer = QTimer(self)
+        self.radio_hide_timer.setSingleShot(True)
+        self.radio_hide_timer.timeout.connect(self.hide_direction_buttons)
+
+        # 이미지 자르기를 위한 선언 변수들
+        self.hide_timer = None
+        self.current_image = None  # 현재 이미지 데이터를 저장할 변수
+        self.rotation_slider = None  # 슬라이더 객체
+        self.rotation_direction = 'left'  # 회전 방향 초기 설정 '좌측으로 설정'
+        self.crop_start_pos = None  # 자를 영역 시작 위치
+        self.crop_end_pos = None  # 자를 영역 끝 위치
+        self.crop_rect = None  # 선택 영역 (QRect)
+        self.crop_mode = False  # 자르기 모드 여부
+
+        # 자른 이미지를 저장하는 버튼 추가
+        self.save_crop_button = QPushButton("저장", self)
+        self.save_crop_button.clicked.connect(self.apply_crop)
+        self.save_crop_button.setIcon(QIcon("C:/Users/PC/OneDrive/바탕 화면/dark_theme_toolbar/Save.png"))
+        self.save_crop_button.setIconSize(QSize(32, 32))  # 아이콘 크기
+        self.save_crop_button.setFixedSize(60, 60)  # 버튼 크기 고정
+        self.save_crop_button.setStyleSheet("""
+                                    QPushButton {
+                                        background-color: rgb(78, 78, 78);
+                                        border: 1px solid black;
+                                    }
+                                     QPushButton:hover {
+                                        background-color: rgb(139, 139, 139);
+                            }
+                                """)
+        self.save_crop_button.move(600, 450)  # 버튼 위치와 크기
+        #self.save_crop_button.hide() #초기에는 숨김
+        print("save_crop_button 숨겨짐")
+
+        # 슬라이더 생성 및 초기 설정
+        self.create_rotation_slider()
 
         # 창 타이틀과 크기 설정
         self.setWindowTitle('RTI EDIT')
@@ -311,21 +401,21 @@ class Image_Edit_dark_window(QMainWindow):
         # image_layout.addWidget(self.image_label)
 
         # 이미지 로드하는 버튼 코드
-        self.load_button = QPushButton(self)
-        self.load_button.setFixedSize(300, 300)  # 버튼 크기
-        self.load_button.setIcon(QIcon("C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Plus square.png"))  # 아이콘 설정
-        self.load_button.setIconSize(QSize(300, 300))  # 아이콘 크기 조정
-        self.load_button.setStyleSheet("""
-                       QPushButton {
-                           background-color: transparent;
-                           border: none;
-                       }
-                       QPushButton:hover {
-                           background-color: rgb(139, 139, 139);
-                       }
-                   """)
-        self.load_button.move(620, 350)
-        self.load_button.clicked.connect(self.open_image_file)  # 클릭 시 이미지 불러오기
+        #self.load_button = QPushButton(self)
+        #self.load_button.setFixedSize(300, 300)  # 버튼 크기
+        #self.load_button.setIcon(QIcon("C:/Users/PC/OneDrive/바탕 화면/dark_theme_left_icon/Plus square.png"))  # 아이콘 설정
+        #self.load_button.setIconSize(QSize(300, 300))  # 아이콘 크기 조정
+        #self.load_button.setStyleSheet("""
+        #               QPushButton {
+        #                   background-color: transparent;
+        #                   border: none;
+        #               }
+        #               QPushButton:hover {
+         #                  background-color: rgb(139, 139, 139);
+         #              }
+        #           """)
+       # self.load_button.move(620, 350)
+       # self.load_button.clicked.connect(self.open_image_file)  # 클릭 시 이미지 불러오기
 
         # 이미지를 한 번만 삭제하기 위한 플래그 변수
         self.load_button_deleted = False  # 삭제 여부를 추적하는 변수
@@ -399,7 +489,7 @@ class Image_Edit_dark_window(QMainWindow):
                 }
             """)
         self.tree.hideColumn(1)
-        # self.tree.hideColumn(2)
+        self.tree.hideColumn(2)
         self.tree.hideColumn(3)
         self.tree.move(1300, 65)
         self.tree.doubleClicked.connect(self.load_image_from_tree)
@@ -407,6 +497,287 @@ class Image_Edit_dark_window(QMainWindow):
 
         # 드래그 앤 드롭 기능 활성화
         self.setAcceptDrops(True)
+
+    def display_image_with_offset(self):
+        # OpenCV 이미지를 QImage로 변환 후 QLabel에 표시 (오프셋 적용)
+        if self.current_image is None:
+            return
+
+        image = cv2.cvtColor(self.current_image, cv2.COLOR_BGR2RGB)
+        height, width, channel = image.shape
+        bytes_per_line = channel * width
+        q_image = QImage(image.data, width, height, bytes_per_line, QImage.Format.Format_RGB888)
+
+        pixmap = QPixmap.fromImage(q_image)
+
+        # 오프셋을 적용하여 이미지 자르기
+        cropped_pixmap = pixmap.copy(self.current_image_offset_x, self.current_image_offset_y, self.image_label.width(),
+                                     self.image_label.height())
+
+        # 이미지 레이블에 표시
+        self.image_label.setPixmap(cropped_pixmap)
+
+    def shift_current_image_within_label(self):
+        if self.current_image is None:
+            print("이동할 이미지가 없습니다.")
+            return
+
+        # 현재 선택된 방향 가져오기
+        direction = self.direction_group.checkedId()
+        if direction == -1:
+            print("방향을 선택해주세요.")
+            return
+
+        # 현재 이미지의 위치 정보
+        current_x = self.current_image_offset_x
+        current_y = self.current_image_offset_y
+        img_width, img_height = self.current_image.shape[1], self.current_image.shape[0]
+        label_width = self.image_label.width()
+        label_height = self.image_label.height()
+
+        # 이동할 거리 설정
+        move_step = 10
+
+        # 이동 방향에 따라 새로운 좌표 설정
+        if direction == 0:  # 위로 이동
+            new_y = current_y - move_step
+            if new_y < 0:
+                self.show_warning_dialog("이미지를 더 이상 위로 이동할 수 없습니다.")
+                return
+            current_y = new_y
+
+        elif direction == 1:  # 아래로 이동
+            new_y = current_y + move_step
+            if new_y + img_height > label_height:
+                self.show_warning_dialog("이미지를 더 이상 아래로 이동할 수 없습니다.")
+                return
+            current_y = new_y
+
+        elif direction == 2:  # 왼쪽으로 이동
+            new_x = current_x - move_step
+            if new_x < 0:
+                self.show_warning_dialog("이미지를 더 이상 왼쪽으로 이동할 수 없습니다.")
+                return
+            current_x = new_x
+
+        elif direction == 3:  # 오른쪽으로 이동
+            new_x = current_x + move_step
+            if new_x + img_width > label_width:
+                self.show_warning_dialog("이미지를 더 이상 오른쪽으로 이동할 수 없습니다.")
+                return
+            current_x = new_x
+
+        # 업데이트된 위치로 이미지 다시 디스플레이
+        self.current_image_offset_x = current_x
+        self.current_image_offset_y = current_y
+        self.display_image_with_offset()
+    # 이미지 이동을 처리하는 메소드 추가
+    def shift_image(self):
+        if self.current_image is None:
+            print("이동할 이미지가 없습니다.")
+            return
+
+        # 현재 이미지 위치 가져오기
+        current_pos = self.image_label.pos()
+        shift_distance = 20  # 이동 거리
+
+        # 선택된 방향에 따라 이미지 이동
+        if self.radio_up.isChecked():
+            new_y = current_pos.y() - shift_distance
+            if new_y >= 0:
+                self.image_label.move(current_pos.x(), new_y)
+            else:
+                self.show_warning_dialog("더 이상 위로 이동할 수 없습니다.")
+
+        elif self.radio_down.isChecked():
+            new_y = current_pos.y() + shift_distance
+            if new_y + self.image_label.height() <= self.height():
+                self.image_label.move(current_pos.x(), new_y)
+            else:
+                self.show_warning_dialog("더 이상 아래로 이동할 수 없습니다.")
+
+        elif self.radio_left.isChecked():
+            new_x = current_pos.x() - shift_distance
+            if new_x >= 0:
+                self.image_label.move(new_x, current_pos.y())
+            else:
+                self.show_warning_dialog("더 이상 왼쪽으로 이동할 수 없습니다.")
+
+        elif self.radio_right.isChecked():
+            new_x = current_pos.x() + shift_distance
+            if new_x + self.image_label.width() <= self.width():
+                self.image_label.move(new_x, current_pos.y())
+            else:
+                self.show_warning_dialog("더 이상 오른쪽으로 이동할 수 없습니다.")
+
+    # 이미지 이동 버튼 클릭 시 라디오 버튼 표시
+    def show_direction_buttons(self):
+        # 라디오 버튼 표시
+        self.radio_up.show()
+        self.radio_down.show()
+        self.radio_left.show()
+        self.radio_right.show()
+
+        # 버튼을 제일 앞으로 가져오기
+        self.radio_up.raise_()
+        self.radio_down.raise_()
+        self.radio_left.raise_()
+        self.radio_right.raise_()
+
+        # 3초 후 라디오 버튼 숨기기
+        self.radio_hide_timer.start(3000)
+
+    # 라디오 버튼을 숨기는 메소드
+    def hide_direction_buttons(self):
+        self.radio_up.hide()
+        self.radio_down.hide()
+        self.radio_left.hide()
+        self.radio_right.hide()
+
+    def activate_crop_mode(self):
+        # 자르기 모드 활성화
+        self.crop_mode = True
+        self.save_crop_button.show()  # 자르기 모드가 활성화되면 저장 버튼을 보이게 설정
+
+
+    def create_rotation_slider(self):
+        self.rotation_slider = QSlider(Qt.Orientation.Horizontal, self)
+        self.rotation_slider.setMinimum(0)  # 최소 각도
+        self.rotation_slider.setMaximum(180)  # 최대 각도
+        self.rotation_slider.setValue(0)  # 초기 각도
+        self.rotation_slider.setTickInterval(10)
+        self.rotation_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
+        self.rotation_slider.valueChanged.connect(self.rotate_image)  # 슬라이더 값 변경 시 회전 함수 연결
+        self.rotation_slider.move(109, 50)
+        self.rotation_slider.hide()  # 초기 상태에서는 숨김
+
+        self.rotation_slider.setStyleSheet("""
+                QSlider::groove:horizontal {
+                    background: rgb(200, 200, 200); /* 슬라이더 배경색 (밝은 회색) */
+                    height: 8px; /* 슬라이더 높이 */
+                    border-radius: 4px;
+                }
+                QSlider::handle:horizontal {
+                    background: white; /* 슬라이더 핸들 색상 (하얀색) */
+                    border: 1px solid gray; /* 핸들 테두리 */
+                    width: 16px; /* 핸들 너비 */
+                    height: 16px; /* 핸들 높이 */
+                    margin: -5px 0; /* 핸들 위치 조정 */
+                    border-radius: 8px;
+                }
+                QSlider::sub-page:horizontal {
+                    background: white; /* 이동한 부분의 색상 (하얀색) */
+                    border-radius: 4px;
+                }
+                QSlider::add-page:horizontal {
+                    background: rgb(150, 150, 150); /* 남은 부분의 색상 (회색) */
+                    border-radius: 4px;
+                }
+            """)
+        # 슬라이더 누를 때와 뗄 때에 따른 이벤트 설정
+        self.rotation_slider.sliderPressed.connect(self.show_slider)
+        self.rotation_slider.sliderReleased.connect(self.hide_slider_after_use)
+
+        # 타이머 설정: 슬라이더가 사라질 지연 시간을 설정
+        self.hide_timer = QTimer()
+        self.hide_timer.setSingleShot(True)
+        self.hide_timer.timeout.connect(self.rotation_slider.hide)  # 타이머 만료 시 슬라이더 숨김
+
+    def mousePressEvent(self, event):
+        # 자르기 모드가 활성화된 상태에서 마우스 클릭 시 자르기 시작점 설정
+        if self.crop_mode and event.button() == Qt.MouseButton.LeftButton:
+            self.crop_start_pos = event.pos()
+
+    def mouseMoveEvent(self, event):
+        # 자르기 모드가 활성화된 상태에서 마우스를 드래그하면 자를 영역을 업데이트
+        if self.crop_mode and self.crop_start_pos:
+            self.crop_end_pos = event.pos()
+            self.crop_rect = QRect(self.crop_start_pos, self.crop_end_pos)  # 선택 영역 생성
+            self.update()  # 화면 갱신 (선택 영역 표시를 위해)
+
+    def mouseReleaseEvent(self, event):
+        # 마우스 버튼을 놓으면 자르기 끝점을 설정
+        if self.crop_mode and event.button() == Qt.MouseButton.LeftButton:
+            self.crop_end_pos = event.pos()
+            self.crop_rect = QRect(self.crop_start_pos, self.crop_end_pos)
+            self.update()
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        if self.crop_rect and self.crop_mode:
+            # painter를 메인 윈도우에 설정하여 QLabel 위에 드래그 사각형을 그립니다
+            painter = QPainter(self)
+            painter.setPen(QPen(QColor(255, 0, 0), 2, Qt.PenStyle.DashLine))
+
+            # crop_rect를 QLabel 위치 기준으로 그리기 위해, QLabel 위치를 crop_rect에 맞춰 변환
+            translated_rect = self.crop_rect.translated(self.image_label.x(), self.image_label.y())
+            painter.drawRect(translated_rect)  # 변환된 사각형을 그립니다
+            painter.end()
+
+    def apply_crop(self):
+        # 선택 영역을 기준으로 이미지를 자르고 QLabel에 표시
+        if self.crop_rect and self.current_image is not None:
+            print("이미지 자르기 적용 중")  # 자르기 적용 확인
+            x1 = self.crop_rect.left()
+            y1 = self.crop_rect.top()
+            x2 = self.crop_rect.right()
+            y2 = self.crop_rect.bottom()
+
+            # 현재 이미지에서 선택 영역 자르기
+            cropped_image = self.current_image[y1:y2, x1:x2]
+            self.display_image(cropped_image)  # 자른 이미지 표시
+            print("이미지 자르기 완료 및 표시됨")  # 자른 이미지가 표시됐는지 확인
+
+            self.crop_rect = None  # 선택 영역 초기화
+            self.crop_mode = False  # 자르기 모드 비활성화
+            self.save_crop_button.hide()  # 저장 버튼 숨김
+            print("저장 버튼 숨김")  # 저장 버튼이 숨겨졌는지 확인
+
+    def display_image(self, image):
+        # OpenCV 이미지를 QImage로 변환 후 QLabel에 표시
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        height, width, channel = image.shape
+        bytes_per_line = channel * width
+        q_image = QImage(image.data, width, height, bytes_per_line, QImage.Format.Format_RGB888)
+        pixmap = QPixmap.fromImage(q_image)
+        self.image_label.setPixmap(pixmap)
+        self.current_image = image  # 현재 이미지를 자른 이미지로 업데이트
+
+
+    def rotate_image(self, angle):
+        if self.current_image is None:
+            return
+
+        # 회전 방향에 따라 각도를 적용하여 이미지를 회전
+        height, width = self.current_image.shape[:2]
+        center = (width // 2, height // 2)
+        rotation_angle = angle if self.rotation_direction == 'right' else -angle
+        rotation_matrix = cv2.getRotationMatrix2D(center, rotation_angle, 1.0)
+        rotated_image = cv2.warpAffine(self.current_image, rotation_matrix, (width, height))
+
+        # QImage로 변환하여 QLabel에 표시
+        self.display_image(rotated_image)
+
+    def display_image(self, image):
+        # OpenCV 이미지를 QImage로 변환 후 QLabel에 표시
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        height, width, channel = image.shape
+        bytes_per_line = channel * width
+        q_image = QImage(image.data, width, height, bytes_per_line, QImage.Format.Format_RGB888)
+        pixmap = QPixmap.fromImage(q_image)
+        self.image_label.setPixmap(pixmap)
+
+    def show_and_raise_slider(self):
+        self.rotation_slider.show()
+        self.rotation_slider.raise_()  # 슬라이더를 가장 위로 올림
+        # 슬라이더를 누르고 있는 동안에
+        #self.rotation_slider.sliderPressed.connect(self.show_slider)
+        #self.rotation_slider.sliderReleased.connect(self.hide_slider_after_use)
+
+    def show_slider(self):
+        # 슬라이더를 표시하고 타이머 정지 (사라지지 않도록 함)
+        self.rotation_slider.show()
+        self.hide_timer.stop()  # 슬라이더가 누르는 동안 숨겨지지 않음
 
     def create_toolbar(self):
         # 툴바 생성
@@ -481,6 +852,46 @@ class Image_Edit_dark_window(QMainWindow):
                         "윤곽선 각도 조정2", \
                         "윤곽선 각도 조정3", "윤곽선 각도 조정4"]
         print(f"{button_texts[index]} clicked")
+        if index == 0:  # 첫 번째 버튼 클릭 시
+            if self.current_image is None:
+                print("회전할 이미지가 없습니다.")
+                return
+            self.rotation_direction = 'right'
+            self.show_and_raise_slider()
+            print("좌측 회전 슬라이더가 표시되었습니다. ")
+
+        elif index == 1:  # 두 번째 버튼 클릭 시 (우측 회전)
+            if self.current_image is None:
+                print("회전할 이미지가 없습니다.")
+                return
+
+            self.rotation_direction = 'left'
+            self.show_and_raise_slider()
+            print("우측 회전 슬라이더가 표시되었습니다. ")
+
+        # 슬라이더의 값이 변경된 후 일정 시간 후에 슬라이더 숨김 처리
+        self.rotation_slider.valueChanged.connect(self.hide_slider_after_use)
+
+        if index == 2:  # 세 번째 버튼 클릭 시 (이미지 자르기)
+            if self.current_image is None:
+                print("자를 이미지가 없습니다.")
+                return
+
+            print("이미지 자르기 시작!! ")
+            self.activate_crop_mode()
+            print("crop_mode 활성화!!")
+
+        if index == 5:  # '이미지 이동' 버튼 클릭 시
+            if self.current_image is None:
+                print("이동할 이미지가 없습니다.")
+                return
+            self.show_direction_buttons()  # 라디오 버튼을 표시하여 이동 방향 선택하도록 함
+            print("이미지 이동 버튼 눌림")
+            # 이미지 이동 처리
+            self.shift_image()
+    def hide_slider_after_use(self):
+        # 15초 후 슬라이더 숨기기
+        QTimer.singleShot(150000, self.rotation_slider.hide)
 
     def on_grid_button_click(self, index):
         print(f"Grid button {index + 1} clicked")
@@ -492,6 +903,10 @@ class Image_Edit_dark_window(QMainWindow):
             print("이미지를 불러올 수 없습니다.")
             return
 
+        print("이미지 로드 완료")
+        #self.current_image = image  # 로드한 이미지를 저장
+        #self.display_image(image)  # 이미지를 QLabel에 표시
+
         # QLabel의 크기 제한 (1200x900)
         label_width = self.image_label.width()
         label_height = self.image_label.height()
@@ -500,13 +915,17 @@ class Image_Edit_dark_window(QMainWindow):
         image = self.resize_image(image, label_width, label_height)
 
         # OpenCV 이미지를 PyQt에서 사용할 수 있는 QImage로 변환
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # BGR을 RGB로 변환
-        height, width, channel = image.shape
-        bytes_per_line = 3 * width
-        q_image = QImage(image.data, width, height, bytes_per_line, QImage.Format.Format_RGB888)
+        #image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # BGR을 RGB로 변환
+        #height, width, channel = image.shape
+       # bytes_per_line = 3 * width
+        #q_image = QImage(image.data, width, height, bytes_per_line, QImage.Format.Format_RGB888)
 
         # QImage를 QPixmap으로 변환하여 QLabel에 표시
-        self.image_label.setPixmap(QPixmap.fromImage(q_image))
+        #self.image_label.setPixmap(QPixmap.fromImage(q_image))
+        self.current_image = image
+        print("self.current_image에 이미지 할당됨 ")
+        self.display_image(image)
+
 
     def resize_image(self, image, target_width, target_height):
         # 원본 이미지 크기
@@ -552,10 +971,10 @@ class Image_Edit_dark_window(QMainWindow):
                 self.load_image(file_path)
 
     def load_image_from_tree(self, index):
-        # 트리뷰에서 선택된 파일 또는 디렉토리의 경로를 가져옴
+        # 트리뷰에서 선택된 파일 또는 디렉토리의 경로를 가져옵니다.
         file_path = self.model.filePath(index)
 
-        # 폴더인 경우 계속 열 수 있도록 처리
+        # 폴더인 경우 계속 열 수 있도록 처리했습니다.
         if os.path.isdir(file_path):
             if not self.tree.isExpanded(index):
                 self.tree.expand(index)  # 폴더가 닫혀있으면 엶
@@ -750,13 +1169,13 @@ class Real_time_Editor(QMainWindow):
                 }
             """)
         self.tree.hideColumn(1)
-        # self.tree.hideColumn(2)
+        self.tree.hideColumn(2)
         self.tree.hideColumn(3)
         self.tree.move(1300, 65)
         self.tree.doubleClicked.connect(self.load_image_from_tree)
         # main_layout.addWidget(self.tree)
 
-        # 드래그 앤 드롭 기능 활성화
+        # 더블 클릭으로 확인 만듬
         self.setAcceptDrops(True)
 
     def start_real_time_view(self):
@@ -870,6 +1289,8 @@ class Real_time_Editor(QMainWindow):
         # QImage를 QPixmap으로 변환하여 QLabel에 표시
         self.image_label.setPixmap(QPixmap.fromImage(q_image))
 
+
+
     def resize_image(self, image, target_width, target_height):
         # 원본 이미지 크기
         h, w = image.shape[:2]
@@ -933,7 +1354,8 @@ class Real_time_Editor(QMainWindow):
                 print("이미지 파일이 아닙니다.")
 
     def close_RT_Event(self, event):
-        self.camera_thread.stop()
+        self.camera_thread.stop() #쓰레드의 run()을 안전하게 종료하도록 함
+        self.camera_thread.wait() #쓰레드 종료까지 대기
         self.Real_time_edited_closed.emit()  # 창이 닫힐 때 시그널 발생
         event.accept()  # 창을 정상적으로 닫음
 
