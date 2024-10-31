@@ -326,6 +326,11 @@ class Image_Edit_dark_window(QMainWindow):
         # 슬라이더 생성 및 초기 설정
         self.create_rotation_slider()
 
+        # 이미지 축소와 확대를 위한 슬라이더 변수 생성
+        self.shift_slider = None
+        self.initialize_shift_slider()
+        self.original_image = None
+
         # 창 타이틀과 크기 설정
         self.setWindowTitle('RTI EDIT')
         self.setFixedSize(1600, 900)
@@ -639,7 +644,6 @@ class Image_Edit_dark_window(QMainWindow):
         self.crop_mode = True
         self.save_crop_button.show()  # 자르기 모드가 활성화되면 저장 버튼을 보이게 설정
 
-
     def create_rotation_slider(self):
         self.rotation_slider = QSlider(Qt.Orientation.Horizontal, self)
         self.rotation_slider.setMinimum(0)  # 최소 각도
@@ -740,7 +744,9 @@ class Image_Edit_dark_window(QMainWindow):
         bytes_per_line = channel * width
         q_image = QImage(image.data, width, height, bytes_per_line, QImage.Format.Format_RGB888)
         pixmap = QPixmap.fromImage(q_image)
+
         self.image_label.setPixmap(pixmap)
+        self.image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.current_image = image  # 현재 이미지를 자른 이미지로 업데이트
 
 
@@ -758,14 +764,14 @@ class Image_Edit_dark_window(QMainWindow):
         # QImage로 변환하여 QLabel에 표시
         self.display_image(rotated_image)
 
-    def display_image(self, image):
-        # OpenCV 이미지를 QImage로 변환 후 QLabel에 표시
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        height, width, channel = image.shape
-        bytes_per_line = channel * width
-        q_image = QImage(image.data, width, height, bytes_per_line, QImage.Format.Format_RGB888)
-        pixmap = QPixmap.fromImage(q_image)
-        self.image_label.setPixmap(pixmap)
+#    def display_image(self, image):
+#        # OpenCV 이미지를 QImage로 변환 후 QLabel에 표시
+#        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+#        height, width, channel = image.shape
+#        bytes_per_line = channel * width
+#        q_image = QImage(image.data, width, height, bytes_per_line, QImage.Format.Format_RGB888)
+#        pixmap = QPixmap.fromImage(q_image)
+#        self.image_label.setPixmap(pixmap)
 
     def show_and_raise_slider(self):
         self.rotation_slider.show()
@@ -881,6 +887,15 @@ class Image_Edit_dark_window(QMainWindow):
             self.activate_crop_mode()
             print("crop_mode 활성화!!")
 
+        if index == 3:  # 이미지 축소 및 확대 버튼
+            if self.current_image is None:
+                print("자를 이미지가 없습니다.")
+                return
+            self.shift_slider.show()
+            self.shift_slider.raise_()  # 다른 위젯보다 앞으로 배치
+            print("이미지 축소 및 확대 슬라이더 표시됨")
+
+
         if index == 5:  # '이미지 이동' 버튼 클릭 시
             if self.current_image is None:
                 print("이동할 이미지가 없습니다.")
@@ -959,16 +974,16 @@ class Image_Edit_dark_window(QMainWindow):
                 self.load_button_deleted = True  # 삭제되었음을 플래그로 저장
 
     # 드래그 앤 드롭을 통한 이미지 로드
-    def dragEnterEvent(self, event: QDragEnterEvent):
-        if event.mimeData().hasUrls():
-            event.acceptProposedAction()
+#   def dragEnterEvent(self, event: QDragEnterEvent):
+#       if event.mimeData().hasUrls():
+#           event.acceptProposedAction()
 
-    def dropEvent(self, event: QDropEvent):
-        urls = event.mimeData().urls()
-        if urls:
-            file_path = urls[0].toLocalFile()
-            if os.path.isfile(file_path):  # 파일인 경우에만 로드
-                self.load_image(file_path)
+#    def dropEvent(self, event: QDropEvent):
+#        urls = event.mimeData().urls()
+#       if urls:
+#            file_path = urls[0].toLocalFile()
+#           if os.path.isfile(file_path):  # 파일인 경우에만 로드
+#                self.load_image(file_path)
 
     def load_image_from_tree(self, index):
         # 트리뷰에서 선택된 파일 또는 디렉토리의 경로를 가져옵니다.
@@ -992,6 +1007,51 @@ class Image_Edit_dark_window(QMainWindow):
     def closeEvent(self, event):
         self.image_edited_closed.emit()  # 창이 닫힐 때 시그널 발생
         event.accept()  # 창을 정상적으로 닫음
+
+
+    # 이미지 축소 확대 메소드 추가
+    # 슬라이더 값 변경 메소드
+    # 슬라이더 초기화 메소드
+
+    def initialize_shift_slider(self):
+        # 슬라이더 생성
+        self.shift_slider = QSlider(Qt.Orientation.Horizontal, self)
+        self.shift_slider.setMinimum(1)  # 최소 값 1 -> 이미지 크기의 10%
+        self.shift_slider.setMaximum(20)  # 최대 값 20 -> 이미지 크기의 200%
+        self.shift_slider.setValue(10)  # 중간 값 10 -> 이미지 크기의 100%
+        self.shift_slider.setTickInterval(1)  # 간격 10%로 조절
+        self.shift_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
+        self.shift_slider.valueChanged.connect(self.on_shift_slider_value_changed)
+
+        # 슬라이더 스타일
+        self.shift_slider.setStyleSheet("""
+            QSlider::groove:horizontal {background: rgb(200, 200, 200); height: 8px; border-radius: 4px;}
+            QSlider::handle:horizontal {background: white; border: 1px solid gray; width: 16px; height: 16px; margin: -5px 0; border-radius: 8px;}
+            QSlider::sub-page:horizontal {background: white; border-radius: 4px;}
+            QSlider::add-page:horizontal {background: rgb(150, 150, 150); border-radius: 4px;}
+        """)
+
+        self.shift_slider.move(110, 112)  # 슬라이더 위치 설정
+        self.shift_slider.hide()  # 초기에는 숨김
+
+    def on_shift_slider_value_changed(self, value):
+        if self.current_image is None:
+            return
+
+        self.original_image = self.current_image
+        # 현재 슬라이더 위치를 통해 확대/축소 비율 계산
+        scale_factor = value * 0.1  # 예: 값이 1일 때 0.1배, 20일 때 2배
+        scaled_image = cv2.resize(self.current_image, None, fx=scale_factor, fy=scale_factor)
+        scaled_image = cv2.cvtColor(scaled_image, cv2.COLOR_BGR2RGB)
+        self.display_image(scaled_image)
+        self.current_image = scaled_image
+
+        # 슬라이더를 10초 후에 숨기기 위한 타이머 설정
+        self.hide_shift_slider_after_delay()
+
+    def hide_shift_slider_after_delay(self):
+        # 슬라이더 10초 후 숨김
+        QTimer.singleShot(10000, self.shift_slider.hide)
 
 #실시간 이미지 편집 클래스
 class Real_time_Editor(QMainWindow):
