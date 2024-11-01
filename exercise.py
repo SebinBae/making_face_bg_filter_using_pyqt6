@@ -1,7 +1,8 @@
+import subprocess
 import sys
 import os
 from functools import partial
-from PyQt6.QtCore import QSize, Qt, pyqtSignal, QDir, QThread, pyqtSlot, QTimer, QRect
+from PyQt6.QtCore import QSize, Qt, pyqtSignal, QDir, QThread, pyqtSlot, QTimer, QRect, QPoint
 from PyQt6.QtWidgets import QApplication, QPushButton, QHBoxLayout, QVBoxLayout, QWidget, QMainWindow, QLabel, QDialog, \
     QMessageBox, QTreeView, QFileDialog, QSlider, QRadioButton, QButtonGroup
 from PyQt6.QtGui import QIcon, QAction, QDragEnterEvent, QDropEvent, QFileSystemModel, QImage, QPixmap, QPainter, QPen, \
@@ -241,6 +242,16 @@ class Image_Edit_dark_window(QMainWindow):
         #self.current_image_offset_x = 120  # 초기 오프셋 값 설정
         #self.current_image_offset_y = 30
 
+        #------------------그림 그리기 설정---------------------
+        # 그리기 모드 활성화 여부 : False -> 펜 버튼을 눌렀을 때 True로 바뀌게 설정
+        self.drawing = False
+        # 이전 지점 저장 관련 변수
+        self.last_point = QPoint()
+        # 기본 펜 색상 -> 검정색
+        self.pen_color = QColor(255,255,255)
+        # 기본 펜 두께
+        self.pen_width = 10
+
         #라디오 버튼 그룹 생성
         self.direction_group = QButtonGroup(self)
 
@@ -281,7 +292,6 @@ class Image_Edit_dark_window(QMainWindow):
         self.radio_down.setStyleSheet(radio_button_style)
         self.radio_left.setStyleSheet(radio_button_style)
         self.radio_right.setStyleSheet(radio_button_style)
-
 
         # 처음에는 라디오 버튼 숨기기
         self.radio_up.hide()
@@ -498,6 +508,58 @@ class Image_Edit_dark_window(QMainWindow):
         # 드래그 앤 드롭 기능 활성화
         self.setAcceptDrops(True)
 
+    # 펜으로 그리기 관련 메소드
+    def enable_drawing_mode(self):
+        # 펜 그리기 모드 활성화
+        self.drawing = True
+        # 화면 갱신
+        self.update()
+
+    def disable_drawing_mode(self):
+        # 펜 그리기 모드 비활성화
+        self.drawing = False
+        # 화면 갱신
+        self.update()
+
+    def mousePressEvent(self, event):
+        # 마우스 클릭 시 그리기 모드에서 시작 지점 설정
+        if self.drawing and event.button() == Qt.MouseButton.LeftButton:
+            # QLabel 내부로 위치 계산
+            self.last_point = event.pos().toPoint() - QPoint(109, 56)
+            print("시작 지점 설정 완료")
+
+    def mouseMoveEvent(self, event):
+        # 마우스 이동 시 그리기 경로 업데이트
+        if self.drawing and event.buttons() & Qt.MouseButton.LeftButton:
+            painter = QPainter(self.image_label.pixmap())
+            painter.setPen(QPen(self.pen_color, self.pen_width, Qt.PenStyle.SolidLine))
+            painter.drawLine(self.last_point, event.pos().toPoint())  # QLabel 내부로 위치 계산
+            # 위치 업데이트
+            self.last_point = event.pos().toPoint() - QPoint(109, 56)
+            self.update()
+            painter.end()
+            print("그리기 경로 업데이트 완료")
+
+    def mouseReleaseEvent(self, event):
+        # 마우스 버튼을 놓으면 그리기 경로 종료
+        if event.button() == Qt.MouseButton.LeftButton and self.drawing:
+            self.last_point = None
+            print("그리기 경로 종료 완료")
+
+    def paintEvent(self, event):
+        # QPainter를 사용하여 그리기 경로를 화면에 표시
+        if self.drawing and self.last_point is not None:
+            painter = QPainter(self.image_label.pixmap())
+            painter.setPen(QPen(self.pen_color, self.pen_width, Qt.PenStyle.SolidLine))
+            painter.drawPoint(self.last_point)
+
+    # 이미지 캡처 기능 QScreen 사용
+    def capture_screen(self):
+        # 윈도우의 캡처 프로그램 사용
+
+        subprocess.run("start snippingtool", shell=True)
+
+
     def display_image_with_offset(self):
         # OpenCV 이미지를 QImage로 변환 후 QLabel에 표시 (오프셋 적용)
         if self.current_image is None:
@@ -571,6 +633,7 @@ class Image_Edit_dark_window(QMainWindow):
         self.current_image_offset_x = current_x
         self.current_image_offset_y = current_y
         self.display_image_with_offset()
+
     # 이미지 이동을 처리하는 메소드 추가
     def shift_image(self):
         if self.current_image is None:
@@ -683,36 +746,36 @@ class Image_Edit_dark_window(QMainWindow):
         self.hide_timer.setSingleShot(True)
         self.hide_timer.timeout.connect(self.rotation_slider.hide)  # 타이머 만료 시 슬라이더 숨김
 
-    def mousePressEvent(self, event):
+    #def mousePressEvent(self, event):
         # 자르기 모드가 활성화된 상태에서 마우스 클릭 시 자르기 시작점 설정
-        if self.crop_mode and event.button() == Qt.MouseButton.LeftButton:
-            self.crop_start_pos = event.pos()
+        #if self.crop_mode and event.button() == Qt.MouseButton.LeftButton:
+            #self.crop_start_pos = event.pos()
 
-    def mouseMoveEvent(self, event):
+    #def mouseMoveEvent(self, event):
         # 자르기 모드가 활성화된 상태에서 마우스를 드래그하면 자를 영역을 업데이트
-        if self.crop_mode and self.crop_start_pos:
-            self.crop_end_pos = event.pos()
-            self.crop_rect = QRect(self.crop_start_pos, self.crop_end_pos)  # 선택 영역 생성
-            self.update()  # 화면 갱신 (선택 영역 표시를 위해)
+        #if self.crop_mode and self.crop_start_pos:
+            #self.crop_end_pos = event.pos()
+            #self.crop_rect = QRect(self.crop_start_pos, self.crop_end_pos)  # 선택 영역 생성
+            #self.update()  # 화면 갱신 (선택 영역 표시를 위해)
 
-    def mouseReleaseEvent(self, event):
+    #def mouseReleaseEvent(self, event):
         # 마우스 버튼을 놓으면 자르기 끝점을 설정
-        if self.crop_mode and event.button() == Qt.MouseButton.LeftButton:
-            self.crop_end_pos = event.pos()
-            self.crop_rect = QRect(self.crop_start_pos, self.crop_end_pos)
-            self.update()
+        #if self.crop_mode and event.button() == Qt.MouseButton.LeftButton:
+            #self.crop_end_pos = event.pos()
+            #self.crop_rect = QRect(self.crop_start_pos, self.crop_end_pos)
+            #self.update()
 
-    def paintEvent(self, event):
-        super().paintEvent(event)
-        if self.crop_rect and self.crop_mode:
+    #def paintEvent(self, event):
+        #super().paintEvent(event)
+        #if self.crop_rect and self.crop_mode:
             # painter를 메인 윈도우에 설정하여 QLabel 위에 드래그 사각형을 그립니다
-            painter = QPainter(self)
-            painter.setPen(QPen(QColor(255, 0, 0), 2, Qt.PenStyle.DashLine))
+            #painter = QPainter(self)
+            #painter.setPen(QPen(QColor(255, 0, 0), 2, Qt.PenStyle.DashLine))
 
             # crop_rect를 QLabel 위치 기준으로 그리기 위해, QLabel 위치를 crop_rect에 맞춰 변환
-            translated_rect = self.crop_rect.translated(self.image_label.x(), self.image_label.y())
-            painter.drawRect(translated_rect)  # 변환된 사각형을 그립니다
-            painter.end()
+            #translated_rect = self.crop_rect.translated(self.image_label.x(), self.image_label.y())
+            #painter.drawRect(translated_rect)  # 변환된 사각형을 그립니다
+            #painter.end()
 
     def apply_crop(self):
         # 선택 영역을 기준으로 이미지를 자르고 QLabel에 표시
@@ -877,9 +940,9 @@ class Image_Edit_dark_window(QMainWindow):
                 print("자를 이미지가 없습니다.")
                 return
 
-            print("이미지 자르기 시작!! ")
-            self.activate_crop_mode()
-            print("crop_mode 활성화!!")
+            print("QScreen 캡처 사용해서 이미지 자르기 시작!!")
+            self.capture_screen()
+            print("캡처 활성화!!")
 
         if index == 5:  # '이미지 이동' 버튼 클릭 시
             if self.current_image is None:
@@ -889,6 +952,14 @@ class Image_Edit_dark_window(QMainWindow):
             print("이미지 이동 버튼 눌림")
             # 이미지 이동 처리
             self.shift_image()
+
+        if index == 13: #펜 버튼 클릭 시에 그림 그리기 모드 활성화
+            if self.current_image is None:
+                print("그릴 수 있는 이미지가 없습니다.")
+                return
+            self.enable_drawing_mode()
+            print("펜 그리기 모드 활성화 됬습니다.")
+
     def hide_slider_after_use(self):
         # 15초 후 슬라이더 숨기기
         QTimer.singleShot(150000, self.rotation_slider.hide)
