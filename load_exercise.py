@@ -238,6 +238,16 @@ class Image_Edit_dark_window(QMainWindow):
         super().__init__()
         print("이미지 편집 창 초기화 중")
 
+        #이미지 확대 혹은 축소를 위한 돋보기 설정
+
+        self.zoom_factor = 2.0  # 확대 배율
+        self.zoom_size = 100  # 확대 영역 크기 (픽셀)
+        self.zoom_label = QLabel(self)  # 확대된 이미지 표시용 QLabel
+        self.zoom_label.setStyleSheet("border: 2px solid white;")
+        self.zoom_label.hide()  # 초기에는 숨김
+        self.is_magnifier_active = False
+
+
         # 이미지 축소와 확대를 위한 슬라이더 변수 생성
         self.shift_slider = None
         self.initialize_shift_slider()
@@ -501,6 +511,42 @@ class Image_Edit_dark_window(QMainWindow):
             # QLabel 내부로 위치 계산
             self.last_point = event.pos().toPoint() - QPoint(109, 56)
             print("시작 지점 설정 완료")
+
+        if self.is_magnifier_active:
+            print(f"클릭 x 좌표 : {event.pos().x()}, 클릭 y좌표 : {event.pos().y()}")
+            # `image_label` 내부에서의 좌표 계산
+            relative_x = event.pos().x() - self.image_label.x()
+            relative_y = event.pos().y() - self.image_label.y()
+
+            self.show_zoom(QPoint(relative_x, relative_y))  # 클릭 위치 확대/축소
+            self.is_magnifier_active = False  # 한 번만 반응
+        else:
+            super().mousePressEvent(event)
+
+    def show_zoom(self, position):
+        if self.current_image is None:
+            return
+
+        # 이미지 상의 클릭 위치를 중심으로 확대/축소할 영역 계산
+        x = max(0, min(position.x() - self.zoom_size // 2, self.current_image.shape[1] - self.zoom_size))
+        y = max(0, min(position.y() - self.zoom_size // 2, self.current_image.shape[0] - self.zoom_size))
+        roi = self.current_image[y:y + self.zoom_size, x:x + self.zoom_size]
+
+        # 확대/축소하여 QPixmap으로 변환
+        zoomed_roi = cv2.resize(roi, None, fx=self.zoom_factor, fy=self.zoom_factor, interpolation=cv2.INTER_LINEAR)
+        zoomed_roi = cv2.cvtColor(zoomed_roi, cv2.COLOR_BGR2RGB)  # BGR에서 RGB로 변환
+        q_image = QImage(zoomed_roi.data, zoomed_roi.shape[1], zoomed_roi.shape[0], QImage.Format.Format_RGB888)
+        pixmap = QPixmap.fromImage(q_image)
+
+        # 확대된 QPixmap을 QLabel에 표시
+        self.zoom_label.setPixmap(pixmap)
+        self.zoom_label.setFixedSize(pixmap.size())
+        self.zoom_label.move(position - QPoint(self.zoom_size // 2, self.zoom_size // 2))
+        self.zoom_label.raise_()
+        self.zoom_label.show()
+
+        # 2초 후 확대된 영역 숨기기
+        QTimer.singleShot(2000, self.zoom_label.hide)
 
     def mouseMoveEvent(self, event):
         # 마우스 이동 시 그리기 경로 업데이트
@@ -808,12 +854,30 @@ class Image_Edit_dark_window(QMainWindow):
             # 이미지 이동 처리
             self.shift_image()
 
+        if index == 9:  # 특정 부분 확대 버튼
+            self.zoom_factor = 2.0  # 확대 배율
+            self.activate_magnifier()
+            print("특정 부분 확대 시작!")
+
+        if index == 11:
+            self.zoom_factor = 0.5  # 축소 배율
+            self.activate_magnifier()
+            print("특정 부분 축소 시작!")
+
         if index == 13: #펜 버튼 클릭 시에 그림 그리기 모드 활성화
             if self.current_image is None:
                 print("그릴 수 있는 이미지가 없습니다.")
                 return
             self.enable_drawing_mode()
             print("펜 그리기 모드 활성화 됬습니다.")
+
+    def activate_magnifier(self):
+        # 확대/축소 활성화 (다음 마우스 클릭에 반응)
+        self.is_magnifier_active = True
+        print(f"is_magnifier_active 값이 {self.is_magnifier_active}입니다. ")
+        self.update()
+        print("update 완료!")
+
 
     def hide_slider_after_use(self):
         # 15초 후 슬라이더 숨기기
