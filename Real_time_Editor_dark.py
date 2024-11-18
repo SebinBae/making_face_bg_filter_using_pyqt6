@@ -4,7 +4,7 @@ import os
 from functools import partial
 from PyQt6.QtCore import QSize, Qt, pyqtSignal, QDir, QThread, pyqtSlot, QTimer, QRect, QPoint
 from PyQt6.QtWidgets import QApplication, QPushButton, QHBoxLayout, QVBoxLayout, QWidget, QMainWindow, QLabel, QDialog, \
-    QMessageBox, QTreeView, QFileDialog, QSlider, QRadioButton, QButtonGroup, QInputDialog
+    QMessageBox, QTreeView, QFileDialog, QSlider, QRadioButton, QButtonGroup, QInputDialog, QComboBox
 from PyQt6.QtGui import QIcon, QAction, QDragEnterEvent, QDropEvent, QFileSystemModel, QImage, QPixmap, QPainter, QPen, \
     QColor
 from CameraSelectionDialog import CameraSelectionDialog
@@ -237,6 +237,16 @@ class Image_Edit_dark_window(QMainWindow):
     def __init__(self):
         super().__init__()
         print("이미지 편집 창 초기화 중")
+
+        #텍스트 붙여넣기를 위한 텍스트 색상을 위한 변수설정
+        self.insert_color = None
+
+        #텍스트 붙여넣기를 위한 좌표 설정을 위해 마우스 클릭 감지를 위한 변수 설정
+        self.is_insert_active = False
+
+        # 텍스트 붙여넣기를 위한 이벤트 좌표 설정을 위한 변수 설정
+        self.input_text_x = None
+        self.input_text_y = None
 
         #텍스트 붙여넣기를 위한 QInputdialog 설정
         self.input_text = None
@@ -541,10 +551,56 @@ class Image_Edit_dark_window(QMainWindow):
         else:
             print("입력이 취소되었습니다.")
 
+    def get_color_from_user(self):
+        color_dialog = QInputDialog(self)
+        color_dialog.setStyleSheet("""
+                    QDialog {
+                        background-color: rgb(78, 78, 78);  /* 다이얼로그 배경색 */
+                        border-radius: 10px solid black;  /* 둥근 모서리 */
+                    }
+                    QLabel {
+                        color: white;  /* 라벨 텍스트 색상 */
+                        font-size: 14px;
+                    }
+                    QLineEdit {
+                        background-color: rgb(139, 139, 139);  /* 텍스트 입력 배경색 */
+                        color: white;  /* 텍스트 색상 */
+                        padding: 5px;
+                        font-size: 14px;
+                        border: 1px solid #5e5e5e;  /* 입력란 테두리 */
+                        border-radius: 5px;
+                    }
+                    QPushButton {
+                        background-color: rgb(139, 139, 139);  /* 버튼 색상 */
+                        color: #ffffff;
+                        border-radius: 5px;
+                        padding: 5px;
+                        font-size: 13px;
+                    }
+                    QPushButton:hover {
+                        background-color: #45a049;  /* 호버시 버튼 색상 */
+                    }
+                    QPushButton:pressed {
+                        background-color: #3e8e41;  /* 클릭시 버튼 색상 */
+                    }
+                """)
+        color_dialog.setWindowTitle('Input Dialog')
+        color_dialog.setLabelText("Enter the color, using RGB Format!! then click image(wherever you want to insert to your image: ")
+
+        color_dialog.move(109, 80)
+
+        # 다이얼로그 실행
+        if color_dialog.exec() == QDialog.DialogCode.Accepted:
+            self.insert_color = color_dialog.textValue()
+            print("입력된 컬러 텍스트 :", self.insert_color)
+        else:
+            print("입력이 취소되었습니다.")
+
     # 펜으로 그리기 관련 메소드
     def enable_drawing_mode(self):
         # 펜 그리기 모드 활성화
         self.drawing = True
+
         # 화면 갱신
         self.update()
 
@@ -569,6 +625,17 @@ class Image_Edit_dark_window(QMainWindow):
 
             self.show_zoom(QPoint(relative_x, relative_y))  # 클릭 위치 확대/축소
             self.is_magnifier_active = False  # 한 번만 반응
+
+        if self.is_insert_active:
+            #image_label'내부에서의 좌표 계산
+            self.input_text_x = event.pos().x() - self.image_label.x()
+            self.input_text_y = event.pos().y() - self.image_label.y()
+
+            print(f"클릭 x 좌표 : {self.input_text_x}, 클릭 y좌표 : {self.input_text_y }")
+            self.insert_text()
+            print("좌표 이미지에 텍스트 삽입 완료")
+            self.is_insert_active = False
+
         else:
             super().mousePressEvent(event)
 
@@ -908,20 +975,46 @@ class Image_Edit_dark_window(QMainWindow):
             self.activate_magnifier()
             print("특정 부분 확대 시작!")
 
-        if index == 10: # 텍스트 입력 버튼 눌렀을 때
+        if index == 10:  # 텍스트 입력 버튼 눌렀을 때
             self.get_text_from_user()
+            self.get_color_from_user()
+            self.active_insert_active()
+            print("좌표까지 받아왔습니다 + 좌표 이미지에 텍스트 삽입 완료")
 
         if index == 11:
             self.zoom_factor = 0.5  # 축소 배율
             self.activate_magnifier()
             print("특정 부분 축소 시작!")
 
-        if index == 13: #펜 버튼 클릭 시에 그림 그리기 모드 활성화
+        if index == 13: #펜 버튼 클릭 시에 그림 그리기
             if self.current_image is None:
                 print("그릴 수 있는 이미지가 없습니다.")
                 return
-            self.enable_drawing_mode()
+
+            self.drawing_window = DrawingWindow(self.current_image)
+            self.drawing_window.show()
             print("펜 그리기 모드 활성화 됬습니다.")
+
+
+    #텍스트 삽입해주는 동작해주는 메소드
+    def insert_text(self):
+        if self.current_image is None:
+            return
+
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_scale = 0.5
+
+        color_string = self.insert_color.strip("()")
+        b, g, r = map(int, color_string.split(","))
+        color = (b, g, r)
+
+        print("변환 완료")
+        thickness = 2
+        temp_image = cv2.putText(self.current_image, self.input_text, (self.input_text_x, self.input_text_y), font,
+                                 fontScale=font_scale, color=color, thickness=thickness)
+
+        self.current_image = temp_image
+        self.display_image(temp_image)
 
     def activate_magnifier(self):
         # 확대/축소 활성화 (다음 마우스 클릭에 반응)
@@ -930,6 +1023,12 @@ class Image_Edit_dark_window(QMainWindow):
         self.update()
         print("update 완료!")
 
+    def active_insert_active(self):
+        # 텍스트 삽입을 위한 마우스 감지 활성화
+        self.is_insert_active = True
+        print(f"self.is_insert_active 값이 {self.is_insert_active}입니다. ")
+        self.update()
+        print("update 완료!")
 
     def hide_slider_after_use(self):
         # 15초 후 슬라이더 숨기기
@@ -967,7 +1066,6 @@ class Image_Edit_dark_window(QMainWindow):
         self.current_image = image
         print("self.current_image에 이미지 할당됨 ")
         self.display_image(image)
-
 
     def resize_image(self, image, target_width, target_height):
         # 원본 이미지 크기
@@ -1065,9 +1163,10 @@ class Image_Edit_dark_window(QMainWindow):
         # 현재 슬라이더 위치를 통해 확대/축소 비율 계산
         scale_factor = value * 0.1  # 예: 값이 1일 때 0.1배, 20일 때 2배
         scaled_image = cv2.resize(self.current_image, None, fx=scale_factor, fy=scale_factor, interpolation=cv2.INTER_LANCZOS4)
-        scaled_image = cv2.cvtColor(scaled_image, cv2.COLOR_BGR2RGB)
+        #scaled_image = cv2.cvtColor(scaled_image, cv2.COLOR_BGR2RGB)
         self.display_image(scaled_image)
         self.current_image = scaled_image
+
 
         # 슬라이더를 10초 후에 숨기기 위한 타이머 설정
         self.hide_shift_slider_after_delay()
@@ -1479,6 +1578,110 @@ class CameraThread(QThread):
         self._run_flag = False
         self.wait()  # 스레드가 완전히 종료될 때까지 기다림
 
+# 그리기 창을 위한 이벤트
+class DrawingWindow(QWidget):
+    def __init__(self, current_image):
+        super().__init__()
+        self.setWindowTitle("Drawing Tools")
+
+        # 창 크기를 이미지보다 약간 더 크게 설정
+        window_width = current_image.shape[1] + 200  # 여백 추가
+        window_height = current_image.shape[0] + 50  # 여백 추가
+        self.setGeometry(100, 100, window_width, window_height)
+        #self.setStyleSheet("background-color: rgb(24, 24, 24);")
+
+        self.current_image = current_image
+        self.image = self.convert_cv_image_to_qimage(self.current_image)
+        self.drawing = False
+        self.last_point = QPoint()
+        self.drawing_tool = "Line"  # 기본 도구는 선 그리기
+        self.pen_color = Qt.GlobalColor.black  # 기본 색상은 검정
+
+        # 레이아웃 및 위젯 설정
+        self.init_ui()
+
+    def init_ui(self):
+        # 도구 선택 콤보박스
+        self.tool_selector = QComboBox(self)
+        self.tool_selector.addItems(["Line", "Rectangle", "Circle"])
+        self.tool_selector.currentIndexChanged.connect(self.change_tool)
+
+        # 색상 선택 콤보박스
+        self.color_selector = QComboBox(self)
+        self.color_selector.addItems(["Black", "Red", "Green", "Blue", "Yellow", "Cyan", "Magenta", "White"])
+        self.color_selector.currentIndexChanged.connect(self.change_color)
+
+        # 레이아웃 설정
+        layout = QVBoxLayout()
+        layout.addWidget(QLabel("Select Drawing Tool:"))
+        layout.addWidget(self.tool_selector)
+        layout.addWidget(QLabel("Select Color:"))
+        layout.addWidget(self.color_selector)
+
+        # 위젯을 담을 컨테이너
+        control_container = QWidget(self)
+        control_container.setLayout(layout)
+        control_container.setGeometry(self.current_image.shape[1] + 10, 10, 180, 100)  # 이미지 옆에 위치
+
+    def change_tool(self):
+        self.drawing_tool = self.tool_selector.currentText()
+
+    def change_color(self):
+        # 선택된 색상에 따라 pen_color 설정
+        color_name = self.color_selector.currentText()
+        color_map = {
+            "Black": Qt.GlobalColor.black,
+            "Red": Qt.GlobalColor.red,
+            "Green": Qt.GlobalColor.green,
+            "Blue": Qt.GlobalColor.blue,
+            "Yellow": Qt.GlobalColor.yellow,
+            "Cyan": Qt.GlobalColor.cyan,
+            "Magenta": Qt.GlobalColor.magenta,
+            "White": Qt.GlobalColor.white
+        }
+        self.pen_color = color_map[color_name]
+
+    def convert_cv_image_to_qimage(self, cv_image):
+        """OpenCV 이미지를 QImage로 변환"""
+        height, width, channel = cv_image.shape
+        bytes_per_line = 3 * width
+        q_image = QImage(cv_image.data, width, height, bytes_per_line, QImage.Format.Format_BGR888)
+        return q_image
+
+    def paintEvent(self, event):
+        # 페인트 이벤트에서 QPainter를 사용하여 그리기
+        painter = QPainter(self)
+        painter.drawImage(0, 0, self.image)
+
+    def mousePressEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.drawing = True
+            self.last_point = event.position().toPoint()
+
+    def mouseMoveEvent(self, event):
+        if self.drawing and event.buttons() & Qt.MouseButton.LeftButton:
+            temp_image = self.image.copy()
+            painter = QPainter(temp_image)
+            pen = QPen(self.pen_color, 3, Qt.PenStyle.SolidLine)  # 선택한 색상 사용
+            painter.setPen(pen)
+
+            if self.drawing_tool == "Line":
+                painter.drawLine(self.last_point, event.position().toPoint())
+            elif self.drawing_tool == "Rectangle":
+                painter.drawRect(self.last_point.x(), self.last_point.y(),
+                                 event.position().x() - self.last_point.x(),
+                                 event.position().y() - self.last_point.y())
+            elif self.drawing_tool == "Circle":
+                radius = int(((event.position().x() - self.last_point.x()) ** 2 +
+                              (event.position().y() - self.last_point.y()) ** 2) ** 0.5)
+                painter.drawEllipse(self.last_point, radius, radius)
+
+            self.image = temp_image
+            self.update()  # 화면을 갱신하여 그림을 표시
+
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.drawing = False
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
