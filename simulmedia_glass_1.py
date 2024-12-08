@@ -2,11 +2,12 @@
 import cv2
 import numpy as np
 
-def apply_glass_filter(image, face_landmarks):
+def apply_glasses1_filter(image, face_landmarks):
 
     image_height, image_width, _ = image.shape
 
-    transparent_glasses_filter = cv2.imread("C:/Users/PC/image/glasses1.png", cv2.IMREAD_UNCHANGED)
+    transparent_glasses_filter = cv2.imread("C:/Users/PC/image"
+                                            "/glasses1.png", cv2.IMREAD_UNCHANGED)
 
     # 안경 필터 적용 (두 눈의 외곽 좌표 사용)
     left_eye_outer_x = int(face_landmarks.landmark[33].x * image_width)

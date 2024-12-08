@@ -6,7 +6,7 @@ def apply_face_filter(image, face_landmarks):
 
     image_height, image_width, _ = image.shape
 
-    sad_filter = cv2.imread("C:/Users/PC/image/face.png", cv2.IMREAD_UNCHANGED)
+    face_filter = cv2.imread("C:/Users/PC/image/face.png", cv2.IMREAD_UNCHANGED)
 
 
     # 얼굴 전체 영역 계산 (머리카락까지 포함하도록 경계를 넓힘)

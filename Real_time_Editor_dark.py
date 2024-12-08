@@ -4,12 +4,57 @@ import os
 from functools import partial
 from PyQt6.QtCore import QSize, Qt, pyqtSignal, QDir, QThread, pyqtSlot, QTimer, QRect, QPoint
 from PyQt6.QtWidgets import QApplication, QPushButton, QHBoxLayout, QVBoxLayout, QWidget, QMainWindow, QLabel, QDialog, \
-    QMessageBox, QTreeView, QFileDialog, QSlider, QRadioButton, QButtonGroup, QInputDialog, QComboBox
+    QMessageBox, QTreeView, QFileDialog, QSlider, QRadioButton, QButtonGroup, QInputDialog, QComboBox, QMenu
 from PyQt6.QtGui import QIcon, QAction, QDragEnterEvent, QDropEvent, QFileSystemModel, QImage, QPixmap, QPainter, QPen, \
     QColor
 from CameraSelectionDialog import CameraSelectionDialog
 import cv2
 import numpy as np
+import mediapipe as mp
+
+
+from media_background_cafe import apply_background_cafe_filter
+from media_background_river import apply_background_river_filter
+from media_background_window import apply_background_window_filter
+
+from media_face import apply_face_org_filter
+from media_face_smile import apply_face_smile_filter
+from media_hat_black import apply_hat_black_filter
+from media_hat_santa import apply_hat_santa_filter
+from media_hat_rabbit import apply_hat_rabbit_filter
+from media_hat_unicorn import apply_hat_unicorn_filter
+from media_hat_mouse import apply_hat_mouse_filter
+from media_glasses_transparent import apply_glass_transparent_filter
+from media_glasses_black import apply_glass_black_filter
+from media_glasses_patch import apply_glass_patch_filter
+from media_nose_pig import apply_nose_pig_filter
+from media_nose_dog import apply_nose_dog_filter
+from media_nose_deer import apply_nose_deer_filter
+from media_mouth_lips import apply_mouth_lips_filter
+from media_mouth_ah import apply_mouth_ah_filter
+from media_mouth_mask import apply_mouth_mask_filter
+from media_move import apply_move_heart_filter
+
+
+# MediaPipe FaceMesh 초기화
+mp_face_mesh = mp.solutions.face_mesh
+
+def resize_and_apply_filter(filter_image, x_pos, y_pos, width, height, image):
+    resized_filter = cv2.resize(filter_image, (width, height))
+
+    if resized_filter.shape[2] == 4:  # 알파 채널이 있는 경우
+        alpha_s = resized_filter[:, :, 3] / 255.0
+        alpha_l = 1.0 - alpha_s
+    else:
+        alpha_s = np.ones((resized_filter.shape[0], resized_filter.shape[1]), dtype=resized_filter.dtype)
+        alpha_l = np.zeros((resized_filter.shape[0], resized_filter.shape[1]), dtype=resized_filter.dtype)
+
+    if x_pos >= 0 and y_pos + height <= image.shape[0] and x_pos + width <= image.shape[1]:
+        for c in range(0, 3):
+            image[y_pos:y_pos + height, x_pos:x_pos + width, c] = (
+                    alpha_s * resized_filter[:, :, c] + alpha_l * image[y_pos:y_pos + height, x_pos:x_pos + width,
+                                                                  c])
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -1179,9 +1224,46 @@ class Image_Edit_dark_window(QMainWindow):
 #실시간 이미지 편집 클래스
 class Real_time_Editor(QMainWindow):
     Real_time_edited_closed = pyqtSignal()
+
+    current_filter_name = None  # 현재 선택된 필터 이름(클래스 변수)
+
     def __init__(self):
         super().__init__()
         print("이미지 편집 창 초기화 중")
+
+        # 필터 이미지 초기화
+        self.filter_images = {
+            "bg_cafe" : "C:/Users/PC/image/bg_cafe.jpg",
+            "bg_river" : "C:/Users/PC/image/bg_river.jpg",
+            "bg_window" : "C:/Users/PC/image/bg_river.jpg",
+            "face_org" : "C:/Users/PC/image/face_org.png",
+            "face_smile" : "C:/Users/PC/image/face_smile.png",
+            "hat_black" : "C:/Users/PC/image/hat_black.png",
+            "hat_santa" : "C:/Users/PC/image/hat_santa.png",
+            "hat_rabbit" : "C:/Users/PC/image/hat_rabbit.png",
+            "hat_unicorn" : "C:/Users/PC/image/hat_unicorn.png",
+            "hat_mouse" : "C:/Users/PC/image/hat_mouse.png",
+            "glasses_transparent" : "C:/Users/PC/image/glasses_transparent.png",
+            "glasses_black" : "C:/Users/PC/image/glasses_black.png",
+            "glasses_patch" : "C:/Users/PC/image/glasses_patch.png",
+            "nose_pig" : "C:/Users/PC/image/nose_pig.png",
+            "nose_dog" : "C:/Users/PC/image/nose_dog.png",
+            "nose_deer" : "C:/Users/PC/image/nose_deer.png",
+            "mouth_lips" : "C:/Users/PC/image/mouth_lips.png",
+            "mouth_ah" : "C:/Users/PC/image/mouth_ah.png",
+            "mouth_mask" : "C:/Users/PC/image/mouth_mask.png",
+            "heart" : "C:/Users/PC/image/heart.png"
+        }
+
+        self.current_filter = None  # 현재 선택된 필터(이미지 파일)
+
+        # MediaPipe FaceMesh 설정
+        self.face_mesh = mp_face_mesh.FaceMesh(
+            max_num_faces=1,
+            refine_landmarks=True,
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.5
+        )
 
         # 창 타이틀과 크기 설정
         self.setWindowTitle('RTI EDIT')
@@ -1361,6 +1443,11 @@ class Real_time_Editor(QMainWindow):
         # 드래그 앤 드롭 기능 활성화
         self.setAcceptDrops(True)
 
+    def capture_screen(self):
+        # 윈도우의 캡처 프로그램 사용
+
+        subprocess.run("start snippingtool", shell=True)
+
     def start_real_time_view(self):
         # 실시간 카메라 시작
         self.camera_thread.start()
@@ -1414,30 +1501,326 @@ class Real_time_Editor(QMainWindow):
         toolbar.setIconSize(QSize(32, 32))  # 아이콘 크기 설정
         toolbar.setMovable(False)  # 툴바를 고정시킴
 
+    def on_save_button_clicked(self):
+        print("QScreen 캡처 사용해서 이미지 자르기 시작!!")
+        self.capture_screen()
+        print("캡처 활성화!!")
+
     def create_menu_bar(self):
         # 메뉴 바 생성
         menu_bar = self.menuBar()
         menu_bar.setStyleSheet("""
-                QMenuBar {
-                    background-color: rgb(78, 78, 78); /* 메뉴바 배경색 */
-                    color: white; /* 햣메뉴 텍스트 색 */
-                }
-                QMenuBar::item {
-                    background-color: transparent; /* 메뉴 항목의 배경을 투명하게 */
-                    padding: 5px; /* 여백 추가 */
-                    color: white; /* 메뉴 항목 텍스트 색상 설정 */
-                }
-                QMenuBar::item:selected {
-                    background-color: rgb(139, 139, 139); /* 선택된 메뉴 항목의 배경색 */
-                }
-            """)
+            QMenuBar {
+                background-color: rgb(78, 78, 78); /* 메뉴바 배경색 */
+                color: rgb(255,255,255); /* 메뉴 텍스트 색 */
+            }
+            QMenuBar::item {
+                background-color: rgb(78, 78, 78); /* 메뉴 항목 배경색 */
+                padding: 5px; /* 여백 추가 */
+                color: rgb(255,255,255); /* 메뉴 항목 텍스트 색상 */
+            }
+            QMenuBar::item:selected {
+                background-color: rgb(139, 139, 139); /* 선택된 메뉴 항목 배경색 */
+                color: rgb(255,255,255); /* 선택된 메뉴 항목 텍스트 색 */
+            }
+            QMenuBar::item:pressed {
+                background-color: rgb(100, 100, 100); /* 클릭된 메뉴 항목 배경색 */
+                color: rgb(255,255,255); /* 클릭된 메뉴 항목 텍스트 색 */
+            }
+        """)
 
         # 각 메뉴 항목 생성
-        menu_titles = ["File", "Edit", "View", "Device"]
-        for title in menu_titles:
-            menu = menu_bar.addMenu(title)
-            menu.addAction(QAction(f"{title} option 1", self))
-            menu.addAction(QAction(f"{title} Option 2", self))
+        menu_titles = ["File", "Edit", "View", "Filter"]
+
+        file_menu = menu_bar.addMenu(menu_titles[0])
+        file_menu.addAction(QAction(f"New", self))
+        file_menu.addAction(QAction(f"Edit", self))
+        file_menu.addAction(QAction(f"Exit", self))
+
+        edit_menu = menu_bar.addMenu(menu_titles[1])
+        edit_menu.addAction(QAction(f"Cut", self))
+        edit_menu.addAction(QAction(f"save", self))
+        #edit_menu.addAction(QAction(f"", self))
+
+        view_menu = menu_bar.addMenu(menu_titles[2])
+        view_menu.addAction(QAction(f"change view", self))
+
+        filter_menu = menu_bar.addMenu(menu_titles[3])
+        hat_filter_menu = QMenu("hat_filter", self)
+        filter_menu.addMenu(hat_filter_menu)
+
+        black_band_action = QAction("black_hat", self)
+        black_band_action.triggered.connect(self.on_hat_black_selected)
+        hat_filter_menu.addAction(black_band_action)
+
+        santa_hat_action = QAction("santa_hat", self)
+        santa_hat_action.triggered.connect(self.on_hat_santa_selected)
+        hat_filter_menu.addAction(santa_hat_action)
+
+        rabbit_hat_action = QAction("rabbit_hat", self)
+        rabbit_hat_action.triggered.connect(self.on_rabbit_hat_selected)
+        hat_filter_menu.addAction(rabbit_hat_action)
+
+        unicorn_hat_action = QAction("unicorn_hat", self)
+        unicorn_hat_action.triggered.connect(self.on_hat_unicorn_selected)
+        hat_filter_menu.addAction(unicorn_hat_action)
+
+        mouse_hat_action = QAction("mouse_hat", self)
+        mouse_hat_action.triggered.connect(self.on_hat_mouse_selected)
+        hat_filter_menu.addAction(mouse_hat_action)
+
+        face_filter_menu = QMenu("face_filter", self)
+        filter_menu.addMenu(face_filter_menu)
+
+        smile_emoticon_action = QAction("smile_emoticon", self)
+        smile_emoticon_action.triggered.connect(self.on_face_smile_selected)
+        face_filter_menu.addAction(smile_emoticon_action)
+
+        org_emoticon_action = QAction("org_emoticon", self)
+        org_emoticon_action.triggered.connect(self.on_face_org_selected)
+        face_filter_menu.addAction(org_emoticon_action)
+
+        mouth_filter_menu = QMenu("mouth_filter", self)
+        filter_menu.addMenu(mouth_filter_menu)
+
+        mouth_lips_action = QAction("mouth_lips", self)
+        mouth_lips_action.triggered.connect(self.on_mouth_lips_selected)
+        mouth_filter_menu.addAction(mouth_lips_action)
+
+        mouth_ah_action = QAction("mouth_ah", self)
+        mouth_ah_action.triggered.connect(self.on_mouth_ah_selected)
+        mouth_filter_menu.addAction(mouth_ah_action)
+
+        mouth_mask_action = QAction("mouth_mask", self)
+        mouth_mask_action.triggered.connect(self.on_mouth_mask_selected)
+        mouth_filter_menu.addAction(mouth_mask_action)
+
+        nose_filter_menu = QMenu("nose_filter", self)
+        filter_menu.addMenu(nose_filter_menu)
+
+        pig_nose_action = QAction("pig nose", self)
+        pig_nose_action.triggered.connect(self.on_nose_pig_selected)
+        nose_filter_menu.addAction(pig_nose_action)
+
+        dog_nose_action = QAction("dog nose", self)
+        dog_nose_action.triggered.connect(self.on_nose_dog_selected)
+        nose_filter_menu.addAction(dog_nose_action)
+
+        deer_nose_action = QAction("deer nose", self)
+        deer_nose_action.triggered.connect(self.on_nose_deer_selected)
+        nose_filter_menu.addAction(deer_nose_action)
+
+        glass_filter = QMenu("glass_filter", self)
+        filter_menu.addMenu(glass_filter)
+
+        transparent_glasses_action = QAction("transparent glasses", self)
+        transparent_glasses_action.triggered.connect(self.on_glasses_transparent_selected)
+        glass_filter.addAction(transparent_glasses_action)
+
+        black_glasses_action = QAction("black_glasses", self)
+        black_glasses_action.triggered.connect(self.on_glasses_black_selected)
+        glass_filter.addAction(black_glasses_action)
+
+        patch_glasses_action = QAction("patch_glasses", self)
+        patch_glasses_action.triggered.connect(self.on_glasses_patch_selected)
+        glass_filter.addAction(patch_glasses_action)
+
+        #big_eyes_action = QAction("big_eyes", self)
+        #big_eyes_action.triggered.connect(self.on_big_eyes_selected)
+        #glass_filter.addAction(big_eyes_action)
+
+        #tears_action = QAction("tears", self)
+        #tears_action.triggered.connect(self.on_tears_selected)
+        #glass_filter.addAction(tears_action)
+
+        move_filter_menu = QMenu("move_filter", self)
+        filter_menu.addMenu(move_filter_menu)
+
+        heart_action_action = QAction("blue_heart", self)
+        heart_action_action.triggered.connect(self.on_heart_selected)
+        move_filter_menu.addAction(heart_action_action)
+
+        background_filter_menu = menu_bar.addMenu("background_filter")
+
+        cafe_filter_action = QAction("cafe", self)
+        cafe_filter_action.triggered.connect(self.on_bg_cafe_selected)
+        background_filter_menu.addAction(cafe_filter_action)
+
+        river_filter_action = QAction("river", self)
+        river_filter_action.triggered.connect(self.on_bg_river_selected)
+        background_filter_menu.addAction(river_filter_action)
+
+        window_action = QAction("window", self)
+        window_action.triggered.connect(self.on_bg_window_selected)
+        background_filter_menu.addAction(window_action)
+
+    def on_rabbit_hat_selected(self):
+        path = self.filter_images.get("hat_rabbit")
+        print(path)
+        self.current_filter = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        Real_time_Editor.current_filter_name="hat_rabbit"
+        #print(f"current_filter 값은 {self.current_filter}입니다.")
+
+    def on_mouth_lips_selected(self):
+        path = self.filter_images.get("mouth_lips")
+        print(path)
+        self.current_filter = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        Real_time_Editor.current_filter_name= "mouth_lips"
+        #print(f"{self.filter_images['red_thick_mouth']}")
+        #print(f"current_filter 값은 {self.current_filter}입니다.")
+
+    def on_mouth_ah_selected(self):
+        path = self.filter_images.get("mouth_ah")
+        print(path)
+        self.current_filter = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        Real_time_Editor.current_filter_name= "mouth_ah"
+
+    def on_mouth_mask_selected(self):
+        path = self.filter_images.get("mouth_mask")
+        print(path)
+        self.current_filter = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        Real_time_Editor.current_filter_name= "mouth_mask"
+
+    def on_nose_pig_selected(self):
+        path = self.filter_images.get("nose_pig")
+        print(path)
+        self.current_filter = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        Real_time_Editor.current_filter_name= "nose_pig"
+        #print(f"current_filter 값은 {self.current_filter}입니다.")
+
+    def on_nose_dog_selected(self):
+        path = self.filter_images.get("nose_dog")
+        print(path)
+        self.current_filter = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        Real_time_Editor.current_filter_name= "nose_dog"
+
+    def on_nose_deer_selected(self):
+        path = self.filter_images.get("nose_deer")
+        print(path)
+        self.current_filter = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        Real_time_Editor.current_filter_name= "nose_deer"
+
+    def on_glasses_transparent_selected(self):
+        path = self.filter_images.get("glasses_transparent")
+        print(path)
+        self.current_filter = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        Real_time_Editor.current_filter_name= "glasses_transparent"
+        #print(f"current_filter 값은 {self.current_filter}입니다.")
+
+    def on_pig_ear_selected(self):
+        path = self.filter_images.get("pig_ear")
+        print(path)
+        self.current_filter = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        Real_time_Editor.current_filter_name= "pig_ear"
+        #print(f"current_filter 값은 {self.current_filter}입니다.")
+
+    def on_heart_selected(self):
+        path = self.filter_images.get("heart")
+        print(path)
+        self.current_filter = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        Real_time_Editor.current_filter_name= "heart"
+        #print(f"current_filter 값은 {self.current_filter}입니다.")
+
+    def on_face_smile_selected(self):
+        path = self.filter_images.get("face_smile")
+        print(path)
+        self.current_filter = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        Real_time_Editor.current_filter_name= "face_smile"
+        # print(f"current_filter 값은 {self.current_filter}입니다.")
+        #print(f"current_filter 값은 {self.current_filter}입니다.")
+
+    def on_face_org_selected(self):
+        path = self.filter_images.get("face_org")
+        print(path)
+        self.current_filter = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        Real_time_Editor.current_filter_name= "face_org"
+
+    def on_glasses_black_selected(self):
+        path = self.filter_images.get("glasses_black")
+        print(path)
+        self.current_filter = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        Real_time_Editor.current_filter_name= "glasses_black"
+
+    def on_glasses_patch_selected(self):
+        path = self.filter_images.get("glasses_patch")
+        print(path)
+        self.current_filter = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        Real_time_Editor.current_filter_name= "glasses_patch"
+
+    def on_hat_black_selected(self):
+        path = self.filter_images.get("hat_black")
+        print(path)
+        self.current_filter = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        Real_time_Editor.current_filter_name = "hat_black"
+
+    def on_hat_santa_selected(self):
+        path = self.filter_images.get("hat_santa")
+        print(path)
+        self.current_filter = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        Real_time_Editor.current_filter_name = "hat_santa"
+
+    def on_big_eyes_selected(self):
+        path = self.filter_images.get("big_eyes")
+        print(path)
+        self.current_filter = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        Real_time_Editor.current_filter_name = "big_eyes"
+
+    def on_tears_selected(self):
+        path = self.filter_images.get("tears")
+        print(path)
+        self.current_filter = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        Real_time_Editor.current_filter_name = "tears"
+
+    def on_hat_unicorn_selected(self):
+        path = self.filter_images.get("hat_unicorn")
+        print(path)
+        self.current_filter = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        Real_time_Editor.current_filter_name = "hat_unicorn"
+
+    def on_hat_mouse_selected(self):
+        path = self.filter_images.get("hat_mouse")
+        print(path)
+        self.current_filter = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        Real_time_Editor.current_filter_name = "hat_mouse"
+
+    def on_bg_river_selected(self):
+        path = self.filter_images.get("bg_river")
+        print(path)
+        self.current_filter = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        Real_time_Editor.current_filter_name = "bg_river"
+
+    def on_bg_cafe_selected(self):
+        path = self.filter_images.get("bg_cafe")
+        print(path)
+        self.current_filter = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        Real_time_Editor.current_filter_name = "bg_cafe"
+
+    def on_bg_window_selected(self):
+        path = self.filter_images.get("bg_window")
+        print(path)
+        self.current_filter = cv2.imread(path, cv2.IMREAD_UNCHANGED)
+        Real_time_Editor.current_filter_name = "bg_window"
+
+
+
+    #def apply_hat_filter(self, image, face_landmarks):
+
+        #image_height, image_width, _ = image.shape
+        #self.current_filter = cv2.imread(self.filter_images.get("rabbit_band"), cv2.IMREAD_UNCHANGED)
+
+        # 모자 필터 적용 (이마 상단의 랜드마크 사용)
+        #forehead_x = int(face_landmarks.landmark[10].x * image_width)  # 이마 중심 좌표
+        #forehead_y = int(face_landmarks.landmark[10].y * image_height)
+
+        # 모자 너비와 높이를 적절히 설정
+        #hat_height = int(image_height * 0.2)  # 얼굴의 20% 높이로 모자 설정
+        #hat_width = int(self.current_filter.shape[1] * (hat_height / self.current_filter.shape[0]))  # 비율에 맞게 모자 너비 계산
+
+        # 모자를 이마 위쪽으로 배치
+        #resize_and_apply_filter(self.current_filter, forehead_x - hat_width // 2, max(0, forehead_y - hat_height), hat_width,
+                                #hat_height, image)
+
+        #return image
 
     def image_edit_button_click(self, index):
         button_texts = ["좌측 회전", "우측 회전", "이미지 자르기", "이미지 축소 및 확대", "이미지 정지", "이미지 이동", "편집할 윤곽선 고르기", \
@@ -1445,6 +1828,13 @@ class Real_time_Editor(QMainWindow):
                         "윤곽선 각도 조정2", \
                         "윤곽선 각도 조정3", "윤곽선 각도 조정4"]
         print(f"{button_texts[index]} clicked")
+
+        if index == 2:  # 세 번째 버튼 클릭 시 (이미지 자르기)
+
+            print("QScreen 캡처 사용해서 이미지 자르기 시작!!")
+            self.capture_screen()
+            print("캡처 활성화!!")
+
 
     def on_grid_button_click(self, index):
         print(f"Grid button {index + 1} clicked")
@@ -1548,28 +1938,90 @@ class CameraThread(QThread):
             print("카메라를 열 수 없습니다.")
             return
 
+        # MediaPipe FaceMesh 초기화
+        face_mesh = mp_face_mesh.FaceMesh(
+            max_num_faces=1,
+            refine_landmarks=True,
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.5
+            )
+
         # 카메라 프레임 속도(FPS)를 60으로 설정
         self.cap.set(cv2.CAP_PROP_FPS, 30)
 
         print(f"카메라 설정된 FPS: {self.cap.get(cv2.CAP_PROP_FPS)}")  # FPS 확인
 
         print("카메라 실행 시작")
+
         while self._run_flag:
             # 프레임 읽기
             ret, frame = self.cap.read()
-            if ret:
-                # 프레임을 RGB로 변환
-                rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-                # OpenCV 이미지를 PyQt에서 사용할 수 있는 QImage로 변환
-                h, w, ch = rgb_frame.shape
-                bytes_per_line = ch * w
-                q_image = QImage(rgb_frame.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
+            # MediaPipe 얼굴 랜드마크 탐지
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            rgb_frame.flags.writeable = False
 
-                # 신호를 통해 이미지 전송
-                self.change_pixmap_signal.emit(q_image)
-            else:
-                print("카메라에서 프레임을 읽을 수 없습니다.")
+            results = face_mesh.process(rgb_frame)
+
+            rgb_frame.flags.writeable = True
+            brg_frame = cv2.cvtColor(rgb_frame, cv2.COLOR_RGB2BGR)
+
+            # 랜드마크 기반 필터 적용
+            if results.multi_face_landmarks:
+                for face_landmarks in results.multi_face_landmarks:
+                    if Real_time_Editor.current_filter_name == "bg_cafe":
+                        frame = apply_background_cafe_filter(brg_frame)
+                    elif Real_time_Editor.current_filter_name == "bg_river":
+                        frame = apply_background_river_filter(brg_frame)
+                    elif Real_time_Editor.current_filter_name == "bg_window":
+                        frame = apply_background_window_filter(brg_frame)
+                    elif Real_time_Editor.current_filter_name == "face_org": # 클래스 받을 것
+                        frame = apply_face_org_filter(brg_frame, face_landmarks)
+                    elif Real_time_Editor.current_filter_name == "face_smile":
+                        frame = apply_face_smile_filter(brg_frame, face_landmarks)
+                    elif Real_time_Editor.current_filter_name == "hat_black": # 클래스 받을것
+                        frame = apply_hat_black_filter(brg_frame, face_landmarks)
+                    elif Real_time_Editor.current_filter_name == "hat_santa":
+                        frame = apply_hat_santa_filter(brg_frame, face_landmarks)
+                    elif Real_time_Editor.current_filter_name == "hat_rabbit":
+                        frame = apply_hat_rabbit_filter(brg_frame, face_landmarks)
+                    elif Real_time_Editor.current_filter_name == "hat_unicorn":
+                        frame = apply_hat_unicorn_filter(brg_frame, face_landmarks)
+                    elif Real_time_Editor.current_filter_name == "hat_mouse":
+                        frame = apply_hat_mouse_filter(brg_frame, face_landmarks)
+                    elif Real_time_Editor.current_filter_name == "glasses_transparent":
+                        frame = apply_glass_transparent_filter(brg_frame, face_landmarks)
+                    elif Real_time_Editor.current_filter_name == "glasses_black":
+                        frame = apply_glass_black_filter(brg_frame, face_landmarks)
+                    elif Real_time_Editor.current_filter_name == "glasses_patch":
+                        frame = apply_glass_patch_filter(brg_frame, face_landmarks)
+                    elif Real_time_Editor.current_filter_name == "nose_pig":
+                        frame = apply_nose_pig_filter(brg_frame, face_landmarks)
+                    elif Real_time_Editor.current_filter_name == "nose_dog":
+                        frame = apply_nose_dog_filter(brg_frame, face_landmarks)
+                    elif Real_time_Editor.current_filter_name == "nose_deer":
+                        frame = apply_nose_deer_filter(brg_frame, face_landmarks)
+                    elif Real_time_Editor.current_filter_name == "mouth_lips":
+                        frame = apply_mouth_lips_filter(brg_frame, face_landmarks)
+                    elif Real_time_Editor.current_filter_name == "mouth_ah":
+                        frame = apply_mouth_ah_filter(brg_frame, face_landmarks)
+                    elif Real_time_Editor.current_filter_name == "mouth_mask":
+                        frame = apply_mouth_mask_filter(brg_frame, face_landmarks)
+                    elif Real_time_Editor.current_filter_name == "heart":
+                        frame = apply_move_heart_filter(brg_frame)
+
+            # OpenCV 이미지를 PyQt에서 사용할 수 있는 QImage로 변환
+
+            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            h, w, ch = rgb_frame.shape
+            bytes_per_line = ch * w
+            q_image = QImage(rgb_frame.data, w, h, bytes_per_line, QImage.Format.Format_RGB888)
+
+            # 신호를 통해 이미지 전송
+            self.change_pixmap_signal.emit(q_image)
+
+        else:
+            print("카메라에서 프레임을 읽을 수 없습니다.")
 
         # 스레드가 종료되면 카메라를 해제
         self.cap.release()

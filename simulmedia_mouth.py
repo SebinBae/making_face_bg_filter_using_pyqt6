@@ -6,7 +6,7 @@ def apply_mouth_filter(image, face_landmarks):
 
     image_height, image_width, _ = image.shape
 
-    mouth_filter = cv2.imread("C:/Users/PC/image/mouth.png", cv2.IMREAD_UNCHANGED)
+    mouth_filter = cv2.imread("C:/Users/PC/image/mouth1.png", cv2.IMREAD_UNCHANGED)
 
     # 입 좌우 외곽 좌표
     mouth_left_x = int(face_landmarks.landmark[61].x * image_width)

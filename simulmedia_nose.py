@@ -2,7 +2,7 @@
 import cv2
 import numpy as np
 
-def apply_pig_nose_filter(image, face_landmarks, filter_image):
+def apply_pig_nose_filter(image, face_landmarks):
 
     image_height, image_width, _ = image.shape
 

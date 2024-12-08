@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-def apply_rabbit_hat_filter(image, face_landmarks, filter_image):
+def apply_rabbit_hat_filter(image, face_landmarks):
 
     image_height, image_width, _ = image.shape
 

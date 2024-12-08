@@ -2,11 +2,11 @@
 import cv2
 import numpy as np
 
-def apply_big_eyes_filter(image, face_landmarks):
+def apply_tear_eyes_filter(image, face_landmarks):
 
     image_height, image_width, _ = image.shape
 
-    big_eye_filter = cv2.imread("C:/Users/PC/image/eyes.png", cv2.IMREAD_UNCHANGED)
+    big_eye_filter = cv2.imread("C:/Users/PC/image/eyes2.png", cv2.IMREAD_UNCHANGED)
 
     # 안경 필터 적용 (두 눈의 외곽 좌표 사용)
     left_eye_outer_x = int(face_landmarks.landmark[33].x * image_width)

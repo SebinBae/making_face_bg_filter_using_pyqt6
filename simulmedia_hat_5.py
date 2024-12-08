@@ -6,7 +6,7 @@ def apply_mickey_mouse_filter(image, face_landmarks):
 
     image_height, image_width, _ = image.shape
 
-    mickey_mouse_filter = cv2.imread("C:/Users/PC/image/hat.png", cv2.IMREAD_UNCHANGED)
+    mickey_mouse_filter = cv2.imread("C:/Users/PC/image/hat5.png", cv2.IMREAD_UNCHANGED)
 
     # 모자 필터 적용 (이마 상단의 랜드마크 사용)
     forehead_x = int(face_landmarks.landmark[10].x * image_width)  # 이마 중심 좌표
