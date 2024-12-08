@@ -2,11 +2,11 @@
 import cv2
 import numpy as np
 
-def apply_nose_filter(image, face_landmarks):
+def apply_pig_nose_filter(image, face_landmarks, filter_image):
 
     image_height, image_width, _ = image.shape
 
-    nose_filter = cv2.imread("C:/Users/PC/image/nose.png", cv2.IMREAD_UNCHANGED)
+    pig_nose_filter = cv2.imread("C:/Users/PC/image/nose.png", cv2.IMREAD_UNCHANGED)
 
     # 코 랜드마크 번호를 사용하여 코의 좌우와 상하 크기 계산
     nose_top_x = int(face_landmarks.landmark[6].x * image_width)  # 코 상단
@@ -22,7 +22,7 @@ def apply_nose_filter(image, face_landmarks):
 
     # 코 필터를 해당 크기에 맞춰 조정
     if nose_width > 0 and nose_height > 0:
-        resize_and_apply_filter(nose_filter, nose_left_x, nose_top_y, nose_width, nose_height, image)
+        resize_and_apply_filter(pig_nose_filter, nose_left_x, nose_top_y, nose_width, nose_height, image)
 
     return image
 
